@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile-server
+    container_name: java-message-server
+    ports:
+      - "12345:12345"
+
+  client:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile-client
+    container_name: java-message-client
+    depends_on:
+      - server
+    network_mode: "service:server"

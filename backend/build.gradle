@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example.multicommsim'
+version = '1.0'
+
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Buraya ihtiyaç duyulan kütüphaneler eklenir
+}
+
+// İstersen uygulamayı çalıştırmak için main class seçimini yapabilirsin
+// Örnek: ServerApp için main class
+
+application {
+    mainClass = 'server.ServerApp'   // server'ın main class'ı burada olmalı
+}
+
+jar {
+    manifest {
+        attributes(
+            'Main-Class': application.mainClass.get()
+        )
+    }
+}
+
