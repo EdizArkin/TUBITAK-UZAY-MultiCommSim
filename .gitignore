@@ -26,19 +26,8 @@ bin/
 .DS_Store
 Thumbs.db
 
-# Eclipse dosyaları
-.project
-.classpath
-.settings/
-
 # Gradle Wrapper
 gradle/wrapper/gradle-wrapper.jar
-
-# Eclipse ve IntelliJ proje dosyaları
-*.ipr
-*.iws
-*.bak
-*.tmp
 
 # Diğer
 .gradle/

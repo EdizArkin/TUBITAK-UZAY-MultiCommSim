@@ -1,0 +1,108 @@
+.viz-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 16px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.viz-box {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.node {
+  font-size: 1.2rem;
+  padding: 20px;
+  border-radius: 12px;
+  background: #e0f7fa;
+  width: 120px;
+  text-align: center;
+  font-weight: bold;
+  color: #00796b;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+.arrow-line {
+  width: 120px;
+  height: 4px;
+  background: linear-gradient(to right, #bbdefb, #2196f3);
+  position: relative;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.glow-pulse {
+  width: 16px;
+  height: 16px;
+  background: #2196f3;
+  border-radius: 50%;
+  position: absolute;
+  top: -6px;
+  left: 0;
+  animation: move-glow 2s infinite linear;
+  box-shadow: 0 0 8px #2196f3;
+}
+
+@keyframes move-glow {
+  from { left: 0; }
+  to { left: 100%; }
+}
+
+.run-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.run-btn:disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #d32f2f;
+  margin: 10px 0;
+  font-weight: bold;
+}
+
+.log-section {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.log-box {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: inset 0 0 6px #eee;
+}
+
+.log-box pre {
+  margin: 0;
+  font-size: 0.9rem;
+  font-family: monospace;
+  color: #333;
+}

@@ -1,3 +1,4 @@
+// client/ClientApp.java
 package client;
 
 import java.io.*;
@@ -5,7 +6,7 @@ import java.net.*;
 
 public class ClientApp {
     public static void main(String[] args) {
-        String host = "localhost";
+        String host = "java-message-server";  // docker container ismi
         int port = 12345;
 
         String[] messages = {
@@ -28,15 +29,12 @@ public class ClientApp {
                 String response = in.readLine();
                 System.out.println("Server replied: " + response);
 
-                if (msg.equalsIgnoreCase("bye")) {
-                    break;
-                }
-                // Opsiyonel: mesajlar arasında kısa bekleme ekleyebilirsin
-                Thread.sleep(500);
+                if (msg.equalsIgnoreCase("bye")) break;
+                Thread.sleep(300);
             }
 
             System.out.println("Client stopped.");
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
