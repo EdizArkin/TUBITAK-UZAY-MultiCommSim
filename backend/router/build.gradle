@@ -1,0 +1,18 @@
+application {
+    mainClass = 'router.Main'
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+shadowJar {
+    archiveBaseName.set('router')
+    archiveClassifier.set('all')
+    archiveVersion.set('1.0')
+
+    manifest {
+        attributes 'Main-Class': 'router.Main'
+    }
+}
+

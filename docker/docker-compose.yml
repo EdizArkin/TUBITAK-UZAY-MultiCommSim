@@ -5,21 +5,29 @@ networks:
     driver: bridge
 
 services:
+  router:
+    build:
+      context: ../backend/router
+      dockerfile: ../../docker/Dockerfile-router
+    container_name: router
+    networks:
+      - simnet
+    ports:
+      - "6003:6003"
+
   server:
     build:
-      context: ../backend
-      dockerfile: ../docker/Dockerfile-server
+      context: ../backend/server
+      dockerfile: ../../docker/Dockerfile-server
     container_name: java-message-server
     image: java-message-server:latest
     networks:
       - simnet
-    ports:
-      - "12345:12345"
 
   client:
     build:
-      context: ../backend
-      dockerfile: ../docker/Dockerfile-client
+      context: ../backend/client
+      dockerfile: ../../docker/Dockerfile-client
     container_name: java-message-client
     image: java-message-client:latest
     depends_on:

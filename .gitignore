@@ -32,7 +32,11 @@ gradle/wrapper/gradle-wrapper.jar
 # Diğer
 .gradle/
 build/
+# Ignore Gradle project-specific cache directory
+.gradle
 
+# Ignore Gradle build output directory
+build
 
 # === Python ===
 __pycache__/

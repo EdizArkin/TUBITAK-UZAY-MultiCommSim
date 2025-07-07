@@ -1,0 +1,19 @@
+dependencies {
+    implementation project(':router')
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+application {
+    mainClass = 'client.ClientApp'
+}
+
+shadowJar {
+    archiveBaseName.set('client')
+    archiveClassifier.set('all')
+    archiveVersion.set('1.0')
+
+    manifest {
+        attributes 'Main-Class': 'client.ClientApp'
+    }
+}
+

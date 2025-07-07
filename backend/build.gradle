@@ -1,34 +1,17 @@
 plugins {
-    id 'java'
-    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
 }
 
-group = 'com.example.multicommsim'
-version = '1.0'
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'application'
+    apply plugin: 'com.github.johnrengelman.shadow'
 
-sourceCompatibility = '17'
-targetCompatibility = '17'
+    repositories {
+        mavenCentral()
+    }
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    // Buraya ihtiyaç duyulan kütüphaneler eklenir
-}
-
-// İstersen uygulamayı çalıştırmak için main class seçimini yapabilirsin
-// Örnek: ServerApp için main class
-
-application {
-    mainClass = 'server.ServerApp'   // server'ın main class'ı burada olmalı
-}
-
-jar {
-    manifest {
-        attributes(
-            'Main-Class': application.mainClass.get()
-        )
+    dependencies {
+        implementation 'com.google.code.gson:gson:2.10.1'
     }
 }
-
