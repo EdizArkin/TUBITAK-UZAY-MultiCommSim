@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TCPConnectionPool {
     private final Map<String, Socket> serverConnections = new ConcurrentHashMap<>();
     private final SessionManager sessionManager;
-    private final int serverPort;  // 🔹 Port artık sabit
+    private final int serverPort;
 
     public TCPConnectionPool(SessionManager sessionManager, int serverPort) {
         this.sessionManager = sessionManager;
@@ -20,10 +20,9 @@ public class TCPConnectionPool {
         if (existingSocket != null && !existingSocket.isClosed()) {
             return existingSocket;
         }
-
         return serverConnections.computeIfAbsent(serverId, id -> {
             try {
-                System.out.println("TCPConnectionPool: Creating new connection to " + id + ":" + serverPort);
+                System.out.println("Creating new connection to " + id + ":" + serverPort);
                 Socket socket = new Socket(id, serverPort);
                 sessionManager.registerClient(id, socket);
                 return socket;
@@ -34,3 +33,4 @@ public class TCPConnectionPool {
         });
     }
 }
+

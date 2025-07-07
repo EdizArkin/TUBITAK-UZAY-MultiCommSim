@@ -33,7 +33,6 @@ def create_peer():
         environment={
             "SERVER_PORT": str(port),
             "SERVER_MSG": server_msg,
-            "ACTIVE": "false"  # Pasif mod
         },
         network="docker_simnet",
         ports={f"{port}/tcp": None},
@@ -53,7 +52,6 @@ def create_peer():
             "ROUTER_HOST": "router",
             "ROUTER_PORT": "6003",
             "CLIENT_ID": f"client-{peer_id}",
-            "ACTIVE": "false"  # Pasif mod
         },
         network="docker_simnet",
         remove=False,

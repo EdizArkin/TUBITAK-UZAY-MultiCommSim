@@ -13,25 +13,15 @@ public class MessageRouter {
     private final SessionManager sessionManager;
     private final TCPConnectionPool connectionPool;
 
-    public MessageRouter(SessionManager sm, TCPConnectionPool pool) {
-        this.sessionManager = sm;
-        this.connectionPool = pool;
+    public MessageRouter(SessionManager sessionManager, TCPConnectionPool connectionPool) {
+        this.sessionManager = sessionManager;
+        this.connectionPool = connectionPool;
     }
 
-    // MessageRouter.java içinde
     public String routeMessage(Message msg) {
         try {
-            Socket clientSocket = sessionManager.getClientSocket(msg.getTargetIp());
-            if (clientSocket != null) {
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-                BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                writer.write(JsonUtils.toJson(msg) + "\n");
-                writer.flush();
-                return reader.readLine();
-            }
-            
             Socket serverSocket = connectionPool.getOrCreateConnection(msg.getTargetIp());
-            if (serverSocket == null) return "Connection failed";
+            if (serverSocket == null) return "Server not available";
 
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(serverSocket.getOutputStream()));
             BufferedReader reader = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
@@ -42,8 +32,9 @@ public class MessageRouter {
             return reader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
-            return "Error sending message";
+            return "Error routing message";
         }
     }
-
 }
+
+

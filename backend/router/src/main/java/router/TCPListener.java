@@ -11,14 +11,14 @@ import router.models.Message;
 import router.utils.JsonUtils;
 
 public class TCPListener implements Runnable {
-    private final int port;
-    private final SessionManager sessionManager;
-    private final MessageRouter router;
+    private int port;
+    private SessionManager sessionManager;
+    private MessageRouter router;
 
-    public TCPListener(int port, SessionManager sm, MessageRouter r) {
+    public TCPListener(int port, SessionManager sessionManager, MessageRouter router) {
         this.port = port;
-        this.sessionManager = sm;
-        this.router = r;
+        this.sessionManager = sessionManager;
+        this.router = router;
     }
 
     @Override
@@ -41,8 +41,11 @@ public class TCPListener implements Runnable {
             String line;
             while ((line = in.readLine()) != null) {
                 Message msg = JsonUtils.fromJson(line, Message.class);
+
                 sessionManager.registerClient(msg.getClientId(), socket);
+
                 String response = router.routeMessage(msg);
+
                 out.write(response + "\n");
                 out.flush();
             }
@@ -51,3 +54,4 @@ public class TCPListener implements Runnable {
         }
     }
 }
+
