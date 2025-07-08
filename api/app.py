@@ -8,6 +8,19 @@ app = Flask(__name__)
 CORS(app)
 docker_client = docker.from_env()
 
+"""
+Flask-based REST API to manage Docker-based client-server peer pairs for messaging tests.
+
+Endpoints:
+- POST /create-peer: Creates and starts paired server and client Docker containers with specified messages.
+- POST /run-test: Waits briefly for messaging to complete, collects logs from all client/server containers, then removes them.
+
+Uses Docker Python SDK to control containers within a custom Docker network ("docker_simnet").
+
+Designed to facilitate dynamic testing of client-server messaging in isolated containerized environments.
+"""
+
+
 @app.route('/create-peer', methods=['POST'])
 def create_peer():
     data = request.get_json()
@@ -16,7 +29,7 @@ def create_peer():
     peer_id = str(uuid.uuid4())[:8]
     port = 6003
 
-    # Eski containerları temizle
+    # Clean up old containers
     for name in [f"server-{peer_id}", f"client-{peer_id}"]:
         try:
             docker_client.containers.get(name).remove(force=True)
@@ -68,12 +81,12 @@ def run_test():
     logs = {}
     containers = docker_client.containers.list(all=True)
 
-    # Mesajlaşmayı başlatmak için varsayılan olarak tüm container'lar zaten başlatılmış oluyor
+    # By default, all containers are already started to start messaging
 
-    # Bekleme süresi (mesajlaşma tamamlanması için)
+    # Waiting time (for messaging completion)
     time.sleep(4)
 
-    # Logları topla
+    # Collect logs
     for container in containers:
         if container.name.startswith("server-") or container.name.startswith("client-"):
             try:
@@ -82,7 +95,8 @@ def run_test():
             except Exception as e:
                 logs[container.name] = [f"Error reading logs: {e}"]
 
-    # Containerları temizle
+    # Clean containers - 
+    # if there is a container that you want to leave open among the opened server-client peers, you can change it here!
     for container in containers:
         if container.name.startswith("server-") or container.name.startswith("client-"):
             try:

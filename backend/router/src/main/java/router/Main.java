@@ -1,4 +1,16 @@
 package router;
+
+/**
+ * Entry point for the RouterService.
+ * 
+ * Initializes the session manager, connection pool, and message router,
+ * then starts the TCP listener on the configured port (default: 6003).
+ * 
+ * Listens for incoming client connections, manages session routing,
+ * and forwards messages between clients and servers.
+ */
+
+
 public class Main {
     public static void main(String[] args) {
         int tcpPort = 6003;

@@ -1,5 +1,16 @@
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+/**
+ * API helper module for MultiCommSim React app.
+ * 
+ * Provides functions to interact with backend REST API endpoints:
+ * - createPeer: Sends client and server messages to create a new peer pair.
+ * - runTest: Triggers the test execution on the backend.
+ * 
+ * Uses the REACT_APP_API_URL environment variable or defaults to localhost.
+ */
+
+
 export async function createPeer(clientMsg, serverMsg) {
   const res = await fetch(`${API_URL}/create-peer`, {
     method: 'POST',

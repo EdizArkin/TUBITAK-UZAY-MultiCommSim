@@ -1,6 +1,5 @@
 FROM eclipse-temurin:21-jdk
 
-
 WORKDIR /app
 
 COPY build/libs/client-1.0-all.jar app.jar

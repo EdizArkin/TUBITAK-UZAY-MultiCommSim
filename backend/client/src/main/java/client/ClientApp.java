@@ -4,6 +4,16 @@ import java.io.*;
 import java.net.*;
 import com.google.gson.Gson;
 import router.models.Message;
+/**
+ * ClientApp connects to the central router using TCP,
+ * sends a serialized message (JSON) to a target server,
+ * and prints the response received from the router.
+ *
+ * Environment variables define client ID, router address, target server, and message content.
+ * 
+ * Used as a one-shot client: starts, sends message, receives response, then exits.
+ */
+
 
 public class ClientApp {
     public static void main(String[] args) {
@@ -21,14 +31,14 @@ public class ClientApp {
 
             System.out.println("Connected to router");
 
-            // Mesajı JSON olarak router'a gönder
+            // Send message as JSON to router
             Message msg = new Message();
             msg.setClientId(clientId);
             msg.setTargetIp(targetServer);
             msg.setMessage(clientMsg);
             out.println(gson.toJson(msg));
 
-            // Router'dan cevabı al
+            // Get the response from the router
             String response = in.readLine();
             System.out.println("Router replied: " + response);
 

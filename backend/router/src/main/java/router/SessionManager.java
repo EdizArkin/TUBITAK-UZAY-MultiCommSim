@@ -4,11 +4,22 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * SessionManager maintains active socket sessions for both clients and servers.
+ * 
+ * It registers and stores sockets based on their role (client or server) using thread-safe maps,
+ * allowing the router to route messages appropriately between peers.
+ *
+ * Provides methods to retrieve active client/server IDs and their associated sockets.
+ * Designed to support concurrent access in a multithreaded TCP router environment.
+ */
+
+
 public class SessionManager {
     private final Map<String, Socket> clientSockets = new ConcurrentHashMap<>();
     private final Map<String, Socket> serverSockets = new ConcurrentHashMap<>();
 
-    // 🔹 Register client or server socket
+    // Register client or server socket
     public void registerClient(String clientId, Socket socket) {
         if (clientId.startsWith("server-")) {
             serverSockets.put(clientId, socket);
@@ -26,17 +37,17 @@ public class SessionManager {
         return clientSockets.get(clientId);
     }
 
-    // 🔹 Aktif client ID'leri
+    // Active client IDs
     public Set<String> getActiveClientIds() {
         return clientSockets.keySet();
     }
 
-    // 🔹 Aktif server ID'leri
+    // Active server IDs
     public Set<String> getActiveServerIds() {
         return serverSockets.keySet();
     }
 
-    // 🔹 İsteğe bağlı: Her iki listeyi döndür
+    // Optional: Return both lists
     public Map<String, List<String>> getAllActivePeers() {
         return Map.of(
             "clients", new ArrayList<>(clientSockets.keySet()),

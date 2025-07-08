@@ -5,6 +5,16 @@ import java.net.*;
 import com.google.gson.Gson;
 import router.models.Message;
 
+/**
+ * ServerApp listens on a specified TCP port (default 6003) for incoming connections from the router.
+ * For each connected client, it reads JSON-formatted messages, logs the received message,
+ * and responds by sending back a server message combined with the received content.
+ * 
+ * The server runs continuously, accepting multiple clients sequentially.
+ * Environment variables configure the listening port and the server's response message.
+ */
+
+
 public class ServerApp {
     public static void main(String[] args) throws IOException {
         int port = Integer.parseInt(System.getenv().getOrDefault("SERVER_PORT", "6003"));

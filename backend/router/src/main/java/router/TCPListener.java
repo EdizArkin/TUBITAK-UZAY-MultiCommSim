@@ -1,4 +1,5 @@
 package router;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -6,9 +7,19 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-// TCPListener.java
 import router.models.Message;
 import router.utils.JsonUtils;
+
+/**
+ * TCPListener is a TCP server component that listens for incoming client connections on a specified port.
+ * For each connection, it creates a new thread to handle client communication.
+ *
+ * It receives JSON-encoded messages, registers the client with the SessionManager,
+ * and forwards the message to the MessageRouter for delivery to the appropriate server.
+ *
+ * The response from the server is sent back to the client over the same connection.
+ */
+
 
 public class TCPListener implements Runnable {
     private int port;
