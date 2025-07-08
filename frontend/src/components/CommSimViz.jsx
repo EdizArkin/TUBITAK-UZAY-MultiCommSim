@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPeer, runTest } from "../utils/api";
 import './CommSimViz.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -14,15 +15,12 @@ export default function MultiCommSim() {
   const [error, setError] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
 
-  async function createPeer() {
+
+  
+  async function handleCreatePeer() {
     setCreating(true);
     try {
-      const res = await fetch(`${API_URL}/create-peer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientMsg, serverMsg }),
-      });
-      const data = await res.json();
+      const data = await createPeer(clientMsg, serverMsg);
       setPeerList(list => [...list, data]);
       setShowForm(false);
       setClientMsg('');
@@ -35,12 +33,10 @@ export default function MultiCommSim() {
     }
   }
 
-  async function runTest() {
+  async function handleRunTest() {
     setLoading(true);
-    setLogs({});
     try {
-      const res = await fetch(`${API_URL}/run-test`, { method: 'POST' });
-      const data = await res.json();
+      const data = await runTest();
       setLogs(data);
       setPeerList([]);
       setError(null);
@@ -50,6 +46,7 @@ export default function MultiCommSim() {
       setLoading(false);
     }
   }
+
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -107,7 +104,7 @@ export default function MultiCommSim() {
               ➕ Add Peer
             </button>
             <button
-              onClick={runTest}
+              onClick={handleRunTest}
               disabled={loading || peerList.length === 0}
               className={`btn-secondary ${loading || peerList.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -219,7 +216,7 @@ export default function MultiCommSim() {
             <input className="w-full border mb-3 p-2 rounded" placeholder="Server Message"
               value={serverMsg} onChange={e => setServerMsg(e.target.value)} />
             <div className="flex justify-end gap-2">
-              <button onClick={createPeer}
+              <button onClick={handleCreatePeer}
                 disabled={!clientMsg || !serverMsg || creating}
                 className="bg-blue-600 text-white px-4 py-2 rounded">
                 {creating ? 'Adding...' : 'Done'}
