@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './CommSimViz.css'; // Stil dosyan
+import './CommSimViz.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -67,7 +67,7 @@ export default function MultiCommSim() {
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen font-sans">
-      {/* Başlık + Spinner */}
+      {/* Başlık */}
       <div className="flex items-center gap-3 mb-6">
         <AnimatedSpinner />
         <h1 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent drop-shadow-lg select-none">
@@ -75,7 +75,7 @@ export default function MultiCommSim() {
         </h1>
       </div>
 
-      {/* Client & Server ikonları alt yazılı */}
+      {/* Client & Server ikonları */}
       <div className="flex justify-center items-center my-10 relative">
         <div className="flex flex-col items-center">
           <div className="node client-node">💻</div>
@@ -97,21 +97,31 @@ export default function MultiCommSim() {
           🌐 MultiCommSim Dashboard
         </h2>
 
+        {/* 🔘 Şık Butonlar */}
         <div className="flex justify-between items-center bg-indigo-50 p-4 rounded mb-4">
           <div className="flex gap-3">
-            <button onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
-              ➕ Create Peer
+            <button
+              onClick={() => setShowForm(true)}
+              className="btn-primary"
+            >
+              ➕ Add Peer
             </button>
-            <button onClick={runTest} disabled={loading || peerList.length===0}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
+            <button
+              onClick={runTest}
+              disabled={loading || peerList.length === 0}
+              className={`btn-secondary ${loading || peerList.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               {loading ? 'Running...' : '🧪 Run Test'}
             </button>
           </div>
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" checked={autoRefresh}
-              onChange={e => setAutoRefresh(e.target.checked)} />
-            <span className="text-gray-700 font-semibold">🔄 Auto Refresh</span>
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={e => setAutoRefresh(e.target.checked)}
+              className="accent-indigo-600"
+            />
+            <span className="font-semibold text-gray-700">🔄 Auto Refresh</span>
           </label>
         </div>
 
@@ -133,7 +143,7 @@ export default function MultiCommSim() {
               <tbody>
                 {peerList.map((peer, idx) => (
                   <tr key={peer.peerId} className="hover:bg-indigo-50">
-                    <td className="border px-3 py-1">{idx+1}</td>
+                    <td className="border px-3 py-1">{idx + 1}</td>
                     <td className="border px-3 py-1">{peer.client}</td>
                     <td className="border px-3 py-1">{peer.server}</td>
                     <td className="border px-3 py-1 text-green-600 font-semibold">🟢 Connected</td>
@@ -144,40 +154,77 @@ export default function MultiCommSim() {
           )}
         </div>
 
-        {/* Logları grup halinde göster */}
+        {/* 📄 Grup halindeki log kutuları */}
         <div>
-          <h3 className="text-lg font-semibold mb-2">📄 Logs</h3>
+          <h3 className="text-lg font-semibold mb-4">📄 Logs</h3>
           {Object.keys(logs).length === 0 ? (
             <p className="text-gray-400">No logs yet.</p>
           ) : (
-            Object.entries(logs).map(([name, lines]) => (
-              <details key={name} className="mb-3 border rounded">
-                <summary className="bg-gray-200 px-3 py-1 cursor-pointer font-medium">{name}</summary>
-                <div className="bg-gray-50 p-3 text-sm whitespace-pre-wrap max-h-48 overflow-auto">
-                  {lines.map((l, i) => <div key={i}>{l}</div>)}
+            // 1. Peer ID'leri çıkar: "client-xyz", "server-xyz" → sadece "xyz"
+            Array.from(
+              new Set(
+                Object.keys(logs)
+                  .map(k => k.replace(/^client-|^server-/, ''))
+              )
+            ).map((peerId, idx) => {
+              const clientLogs = logs[`client-${peerId}`] || [];
+              const serverLogs = logs[`server-${peerId}`] || [];
+
+              return (
+                <div key={peerId} className="border border-gray-300 rounded-lg mb-6 shadow-sm">
+                  <div className="bg-indigo-100 px-4 py-2 font-bold rounded-t">
+                    Peer #{idx + 1} – ID: {peerId}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4">
+                    <div className="border border-indigo-200 rounded-lg p-3 bg-white">
+                      <h4 className="font-semibold text-indigo-700 mb-2">💻 Client Logs</h4>
+                      {clientLogs.length > 0 ? (
+                        <div className="text-sm whitespace-pre-wrap max-h-48 overflow-auto">
+                          {clientLogs.map((line, i) => (
+                            <div key={i} className="mb-1">{line}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400 italic text-sm">No client logs.</p>
+                      )}
+                    </div>
+                    <div className="border border-indigo-200 rounded-lg p-3 bg-white">
+                      <h4 className="font-semibold text-indigo-700 mb-2">🖥️ Server Logs</h4>
+                      {serverLogs.length > 0 ? (
+                        <div className="text-sm whitespace-pre-wrap max-h-48 overflow-auto">
+                          {serverLogs.map((line, i) => (
+                            <div key={i} className="mb-1">{line}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400 italic text-sm">No server logs.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </details>
-            ))
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* Peer ekleme modal */}
+
+      {/* Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded shadow max-w-sm w-full">
             <h2 className="text-lg font-bold mb-4">➕ Add Peer</h2>
             <input className="w-full border mb-3 p-2 rounded" placeholder="Client Message"
-              value={clientMsg} onChange={e=>setClientMsg(e.target.value)} />
+              value={clientMsg} onChange={e => setClientMsg(e.target.value)} />
             <input className="w-full border mb-3 p-2 rounded" placeholder="Server Message"
-              value={serverMsg} onChange={e=>setServerMsg(e.target.value)} />
+              value={serverMsg} onChange={e => setServerMsg(e.target.value)} />
             <div className="flex justify-end gap-2">
               <button onClick={createPeer}
-                disabled={!clientMsg||!serverMsg||creating}
+                disabled={!clientMsg || !serverMsg || creating}
                 className="bg-blue-600 text-white px-4 py-2 rounded">
-                {creating?'Adding...':'Done'}
+                {creating ? 'Adding...' : 'Done'}
               </button>
-              <button onClick={()=>setShowForm(false)}
+              <button onClick={() => setShowForm(false)}
                 className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
             </div>
             {error && <p className="text-red-500 text-sm mt-2">⚠️ {error}</p>}
@@ -188,12 +235,10 @@ export default function MultiCommSim() {
   );
 }
 
-// Dönen yükleme simgesi
 function AnimatedSpinner() {
   return (
     <svg className="animate-spin h-10 w-10 text-indigo-600"
-      xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-      role="img" aria-label="loading">
+      xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10"
         stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor"
