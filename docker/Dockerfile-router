@@ -8,6 +8,6 @@ EXPOSE 6003
 
 ENV LANG C.UTF-8
 
-CMD ["java", "-cp", "app.jar", "router.Main"]
+CMD ["java", "-cp", "app.jar", "router.RouterService"]
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

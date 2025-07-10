@@ -11,7 +11,7 @@ package router;
  */
 
 
-public class Main {
+public class RouterService {
     public static void main(String[] args) {
         int tcpPort = 6003;
 

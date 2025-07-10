@@ -1,5 +1,5 @@
 application {
-    mainClass = 'router.Main'
+    mainClass = 'router.RouterService'
 }
 
 dependencies {
@@ -12,7 +12,7 @@ shadowJar {
     archiveVersion.set('1.0')
 
     manifest {
-        attributes 'Main-Class': 'router.Main'
+        attributes 'Main-Class': 'router.RouterService'
     }
 }
 
