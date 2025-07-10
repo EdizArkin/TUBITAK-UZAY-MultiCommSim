@@ -22,56 +22,6 @@
 
 ---
 
-## 🧩 Proje Mimarisi
-
-```mermaid
-flowchart TB
-  ReactUI[React UI (Frontend)]
-  Flask[Flask API (Python)]
-  DockerEngine[Docker Engine]
-  Client[Client Container (Java)]
-  Server[Server Container (Java)]
-  Router[Router Container (Java TCP)]
-  
-  ReactUI -->|HTTP POST| Flask
-  Flask -->|Docker SDK| DockerEngine
-  DockerEngine --> Client
-  DockerEngine --> Server
-  DockerEngine --> Router
-  Client -->|TCP| Router
-  Router -->|TCP Forward| Server
-  Server -->|TCP Response| Router
-  Router -->|TCP Response| Client
-```
-
----
-
-## 📁 Proje Yapısı
-
-```mermaid
-flowchart TB
-  ReactUI[React UI (Frontend)]
-  Flask[Flask API (Python)]
-  DockerEngine[Docker Engine]
-  Client[Client Container (Java)]
-  Server[Server Container (Java)]
-  Router[Router Container (Java TCP)]
-
-  ReactUI -->|HTTP POST /create-peer| Flask
-  ReactUI -->|HTTP POST /run-test| Flask
-  Flask -->|Docker SDK (python-docker)| DockerEngine
-  DockerEngine --> Client
-  DockerEngine --> Server
-  DockerEngine --> Router
-  Client -->|TCP| Router
-  Router -->|Target IP (TCP forward)| Server
-  Server -->|TCP response| Router
-  Router -->|TCP response| Client
-```
-
-
----
-
 ## ⚙️ Kurulum & Çalıştırma
 
 ### 1️⃣ Bağımlılıkların Kurulumu
