@@ -48,20 +48,27 @@ flowchart TB
 
 ## 📁 Proje Yapısı
 
+```mermaid
+flowchart TB
+  ReactUI[React UI (Frontend)]
+  Flask[Flask API (Python)]
+  DockerEngine[Docker Engine]
+  Client[Client Container (Java)]
+  Server[Server Container (Java)]
+  Router[Router Container (Java TCP)]
+
+  ReactUI -->|HTTP POST /create-peer| Flask
+  ReactUI -->|HTTP POST /run-test| Flask
+  Flask -->|Docker SDK (python-docker)| DockerEngine
+  DockerEngine --> Client
+  DockerEngine --> Server
+  DockerEngine --> Router
+  Client -->|TCP| Router
+  Router -->|Target IP (TCP forward)| Server
+  Server -->|TCP response| Router
+  Router -->|TCP response| Client
 ```
-MultiCommSim/
-├── client/                → Java client uygulaması
-├── server/                → Java server uygulaması
-├── router/                → Java router service (TCP yönlendirme)
-├── frontend/              → React UI (MultiCommSim Visualizer)
-│   └── public/, src/
-├── api/                   → Python Flask backend (Docker kontrolü)
-├── docker/                → Dockerfile’lar & compose dosyaları
-├── images/                → Arayüz görselleri
-├── documentation/         → Proje dokümantasyonları
-├── requirements.txt       → Python bağımlılıkları
-├── README.md              → Bu dosya
-```
+
 
 ---
 
