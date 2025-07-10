@@ -20,6 +20,23 @@
   <em>Peer oluşturma ekranı – client & server mesajları dinamik girilir</em>
 </p>
 
+## 📁 Proje Yapısı
+
+```
+MultiCommSim/
+├── client/                → Java client uygulaması
+├── server/                → Java server uygulaması
+├── router/                → Java router service (TCP yönlendirme)
+├── frontend/              → React UI (MultiCommSim Visualizer)
+│   └── public/, src/
+├── api/                   → Python Flask backend (Docker kontrolü)
+├── docker/                → Dockerfile’lar & compose dosyaları
+├── images/                → Arayüz görselleri
+├── documentation/         → Proje dokümantasyonları
+├── requirements.txt       → Python bağımlılıkları
+├── README.md              → Bu dosya
+```
+
 ---
 
 ## ⚙️ Kurulum & Çalıştırma
