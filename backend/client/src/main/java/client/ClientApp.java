@@ -27,6 +27,9 @@ public class ClientApp {
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
+                System.out.println("Connected to server at " + serverHost + ":" + serverPort);
+                // Send the message to the server
+                System.out.println("Sending message to server: " + msg);
                 out.println(msg);
                 String reply = in.readLine();
                 System.out.println("Received from server: " + reply);

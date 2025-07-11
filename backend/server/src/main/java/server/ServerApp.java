@@ -19,12 +19,18 @@ public class ServerApp {
             System.out.println("Server started on port " + port);
             while (true) {
                 Socket clientSocket = serverSocket.accept();
+                String clientAddress = clientSocket.getRemoteSocketAddress().toString();
                 new Thread(() -> {
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                          PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+                        System.out.println("Client connected: " + clientAddress + "(ClientApp Address)");
                         String msg = in.readLine();
-                        System.out.println("Received: " + msg);
-                        out.println("Reply from server: " + msg.toUpperCase());
+                        if (msg != null) {
+                            System.out.println("Received from client: " + msg);
+                            String reply = "Reply from server: " + msg.toUpperCase();
+                            out.println(reply);
+                            System.out.println("Sent to client: " + reply);
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

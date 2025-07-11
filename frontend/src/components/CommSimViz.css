@@ -91,3 +91,11 @@
 .log-card-body {
   @apply bg-gray-50 p-4 text-sm whitespace-pre-wrap max-h-64 overflow-auto;
 }
+
+.bg-gradient-to-br {
+  background: linear-gradient(135deg, #eef2ff 0%, #fff 100%);
+}
+
+.rounded-xl {
+  border-radius: 1rem;
+}

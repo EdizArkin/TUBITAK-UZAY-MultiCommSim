@@ -107,6 +107,19 @@ export default function MultiCommSim() {
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
+  // Aktif client'ın bağlı olduğu server'ı bulmak için yardımcı fonksiyon
+  function getClientServerId(clientName) {
+    // client-xxxxxx ise, backend'den client-server eşleşmesini almak gerekir.
+    // Şu an sadece sıralama ile eşleştiriyoruz, daha iyi eşleşme için backend'den client-server eşleşmesi alınabilir.
+    // Şimdilik client'ın index'i ile servers listesinden id alıyoruz.
+    const idx = clients.findIndex(c => c.name === clientName);
+    if (servers[idx]) return servers[idx].id;
+    return null;
+  }
+
+  // Serverları id'ye göre sırala
+  const sortedServers = [...servers].sort((a, b) => a.id - b.id);
+
   // Logları detaylı ve insan okunur şekilde hazırla
   function parseLog(log, who) {
     if (!log) return [];
@@ -114,14 +127,73 @@ export default function MultiCommSim() {
       .split('\n')
       .filter(Boolean)
       .map((line, idx) => {
-        if (line.toLowerCase().includes('received')) {
-          return <div key={idx} className="text-blue-700">{who} aldı: <span className="font-mono">{line}</span></div>;
+        // Server başlatıldı
+        if (/server started/i.test(line)) {
+          return <div key={idx} className="text-indigo-700">Start info: <span className="font-mono">{line}</span></div>;
         }
-        if (line.toLowerCase().includes('reply')) {
-          return <div key={idx} className="text-green-700">{who} dedi: <span className="font-mono">{line}</span></div>;
+        // Client bağlandı
+        if (/client connected/i.test(line)) {
+          return <div key={idx} className="text-indigo-700">Client Connection: <span className="font-mono">{line}</span></div>;
         }
+        // Client'ın serverdan aldığı mesaj
+        if (/received from server/i.test(line)) {
+          return <div key={idx} className="text-blue-700">Client Recived: <span className="font-mono">{line.replace('Received from server:', '').trim()}</span></div>;
+        }
+        // Server'ın client'tan aldığı mesaj
+        if (/received from client/i.test(line)) {
+          return <div key={idx} className="text-blue-700">Server Recived: <span className="font-mono">{line.replace('Received from client:', '').trim()}</span></div>;
+        }
+        // Sadece "Received:" ile başlayanlar (server aldı)
+        if (/^received:/i.test(line)) {
+          return <div key={idx} className="text-blue-700">Server Recived: <span className="font-mono">{line.replace('Received:', '').trim()}</span></div>;
+        }
+        // Server'ın client'a gönderdiği yanıt
+        if (/sent to client/i.test(line)) {
+          return <div key={idx} className="text-green-700">Server Replide: <span className="font-mono">{line.replace('Sent to client:', '').trim()}</span></div>;
+        }
+        // Reply/Echo içeriyorsa (client veya server yanıtı)
+        if (/reply from server/i.test(line)) {
+          return <div key={idx} className="text-green-700">Client Recived: <span className="font-mono">{line.replace('Reply from server:', '').trim()}</span></div>;
+        }
+        if (/echo/i.test(line)) {
+          return <div key={idx} className="text-green-700">Echo: <span className="font-mono">{line}</span></div>;
+        }
+        // Client'ın alive mesajı
+        if (/will stay alive/i.test(line)) {
+          return <div key={idx} className="text-gray-700">{line}</div>;
+        }
+        // Diğer tüm satırlar
         return <div key={idx} className="text-gray-700">{line}</div>;
       });
+  }
+
+  // Logları server-client eşleşmesine göre gruplandır
+  function groupLogsByIndex(logs) {
+    // server: docker-server-1, client: client-xxxxxx
+    const servers = Object.keys(logs)
+      .filter(name => name.startsWith('docker-server-'))
+      .sort((a, b) => {
+        const na = parseInt(a.replace('docker-server-', ''), 10);
+        const nb = parseInt(b.replace('docker-server-', ''), 10);
+        return na - nb;
+      });
+    const clients = Object.keys(logs)
+      .filter(name => name.startsWith('client-'))
+      .sort();
+
+    // Eşleştirme: index bazlı (server1-client1, server2-client2)
+    const pairs = [];
+    const maxLen = Math.max(servers.length, clients.length);
+    for (let i = 0; i < maxLen; ++i) {
+      pairs.push({
+        serverName: servers[i] || null,
+        clientName: clients[i] || null,
+        serverLog: servers[i] ? logs[servers[i]] : null,
+        clientLog: clients[i] ? logs[clients[i]] : null,
+        index: i + 1
+      });
+    }
+    return pairs;
   }
 
   return (
@@ -132,8 +204,8 @@ export default function MultiCommSim() {
           MultiCommSim Visualizer (Optimized)
         </h1>
       </div>
-    {/* Üstte client-server ikonları ve iletişim animasyonu */}
-    <div className="flex justify-center items-center my-10 relative">
+      {/* Üstte client-server ikonları ve iletişim animasyonu */}
+      <div className="flex justify-center items-center my-10 relative">
         <div className="flex flex-col items-center">
           <div className="node client-node">💻</div>
           <span className="icon-label">Client</span>
@@ -149,7 +221,7 @@ export default function MultiCommSim() {
       </div>
 
       {/* Dashboard */}
-      <div className="max-w-6xl mx-auto bg-white p-6 rounded shadow mb-6">
+      <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow mb-6 border border-indigo-200">
         <div className="flex justify-between items-center bg-indigo-50 p-4 rounded mb-4">
           <div className="flex gap-3">
             <button onClick={() => setShowServerForm(true)} className="btn-primary">
@@ -179,20 +251,22 @@ export default function MultiCommSim() {
 
         {/* Aktif Serverlar */}
         <h3 className="text-lg font-semibold mb-2">🖥️ Active Servers</h3>
-        {servers.length === 0 ? (
-          <p className="text-gray-400">No active servers.</p>
-        ) : (
-          <ul className="pl-0 mb-4">
-            {servers.map(s => (
-              <li key={s.id} className="flex items-center gap-2 mb-1">
-                <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                <span className="font-bold text-indigo-700">#{s.id}</span>
-                <span className="text-gray-700">{s.name}</span>
-                <span className="ml-2 text-xs text-gray-500">Port: 6003</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          {sortedServers.length === 0 ? (
+            <div className="col-span-full text-gray-400">No active servers.</div>
+          ) : (
+            sortedServers.map((s, idx) => (
+              <div key={s.id} className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 rounded-xl shadow flex flex-col items-start p-4 transition hover:shadow-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-block w-3 h-3 rounded-full bg-green-500"></span>
+                  <span className="font-bold text-indigo-700 text-lg">#{s.id}</span>
+                </div>
+                <div className="text-gray-800 font-mono text-base mb-1">{s.name}</div>
+                <div className="text-xs text-gray-500">Port: 6003</div>
+              </div>
+            ))
+          )}
+        </div>
 
         {/* Aktif Clientlar */}
         <h3 className="text-lg font-semibold mb-2 mt-4">💻 Active Clients</h3>
@@ -200,12 +274,21 @@ export default function MultiCommSim() {
           <p className="text-gray-400">No active clients.</p>
         ) : (
           <ul className="pl-0">
-            {clients.map((c, i) => (
-              <li key={i} className="flex items-center gap-2 mb-1">
-                <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                <span className="font-bold text-green-700">{c.name}</span>
-              </li>
-            ))}
+            {clients.map((c, i) => {
+              const serverId = getClientServerId(c.name);
+              return (
+                <li key={i} className="flex items-center gap-2 mb-1">
+                  <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                  <span className="font-bold text-green-700">{c.name}</span>
+                  {serverId && (
+                    <span className="ml-2 text-gray-500 text-sm flex items-center">
+                      <span className="mx-1">→</span>
+                      <span className="font-bold text-indigo-700">Server #{serverId}</span>
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -217,23 +300,27 @@ export default function MultiCommSim() {
           <p className="text-gray-400">No logs yet.</p>
         ) : (
           <>
-            {/* Server Logları */}
-            <h4 className="font-semibold text-indigo-700 mb-2">🖥️ Server Logs</h4>
-            {servers.map(s => (
-              <div key={s.name} className="mb-4 border rounded p-3 bg-gray-50">
-                <div className="font-bold mb-1">{s.name} (Port: 6003)</div>
-                <div className="text-sm whitespace-pre-wrap">
-                  {parseLog(logs[s.name], "Server")}
+            {/* Server #N & Client #N Logs kutuları */}
+            {groupLogsByIndex(logs).map(({ serverName, clientName, serverLog, clientLog, index }) => (
+              <div key={index} className="mb-8 border rounded-lg p-4 bg-gray-50">
+                <div className="font-bold text-lg mb-2">
+                  Server #{index} & Client #{index} Logs
                 </div>
-              </div>
-            ))}
-            {/* Client Logları */}
-            <h4 className="font-semibold text-green-700 mb-2 mt-6">💻 Client Logs</h4>
-            {clients.map(c => (
-              <div key={c.name} className="mb-4 border rounded p-3 bg-gray-50">
-                <div className="font-bold mb-1">{c.name}</div>
-                <div className="text-sm whitespace-pre-wrap">
-                  {parseLog(logs[c.name], "Client")}
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Client Logs */}
+                  <div className="flex-1">
+                    <div className="font-semibold text-green-700 mb-1">💻 Client Logs</div>
+                    <div className="log-card-body">
+                      {clientLog ? parseLog(clientLog, "Client") : <span className="text-gray-400">No client log.</span>}
+                    </div>
+                  </div>
+                  {/* Server Logs */}
+                  <div className="flex-1">
+                    <div className="font-semibold text-indigo-700 mb-1">🖥️ Server Logs</div>
+                    <div className="log-card-body">
+                      {serverLog ? parseLog(serverLog, "Server") : <span className="text-gray-400">No server log.</span>}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

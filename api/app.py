@@ -122,14 +122,28 @@ def run_test():
     time.sleep(5)
 
     logs = {}
-    for container in docker_client.containers.list(all=True):
-        if container.name.startswith("server-") or container.name.startswith("client-"):
-            log_output = container.logs().decode('utf-8')
-            logs[container.name] = log_output
+    containers = docker_client.containers.list(all=True)
+    for container in containers:
+        # Sadece docker-server- ve client- ile başlayanlar
+        if container.name.startswith("docker-server-") or container.name.startswith("client-"):
+            try:
+                # Container'ın durumu ve logu
+                container.reload()
+                status = container.status
+                log_output = container.logs(stdout=True, stderr=True).decode('utf-8', errors='replace')
+                if not log_output.strip():
+                    log_output = f"[WARN] No logs captured from {container.name} (status: {status})"
+                logs[container.name] = log_output
+            except Exception as e:
+                logs[container.name] = f"[ERROR] Could not fetch logs: {str(e)}"
 
-    for container in docker_client.containers.list(all=True):
-        if container.name.startswith("server-") or container.name.startswith("client-"):
-            container.remove(force=True)
+    # Loglar alındıktan sonra containerları sil
+    for container in containers:
+        if container.name.startswith("docker-server-") or container.name.startswith("client-"):
+            try:
+                container.remove(force=True)
+            except Exception as e:
+                pass  # Silinemeyen container için hata bastırılır
 
     return jsonify(logs)
 
