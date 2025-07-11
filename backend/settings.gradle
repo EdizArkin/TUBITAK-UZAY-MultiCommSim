@@ -10,6 +10,5 @@ rootProject.name = 'backend'
 
 include 'client'
 include 'server'
-include 'router'
 
 

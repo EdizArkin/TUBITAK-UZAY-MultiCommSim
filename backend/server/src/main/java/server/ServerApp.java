@@ -2,8 +2,6 @@ package server;
 
 import java.io.*;
 import java.net.*;
-import com.google.gson.Gson;
-import router.models.Message;
 
 /**
  * ServerApp listens on a specified TCP port (default 6003) for incoming connections from the router.
@@ -14,35 +12,27 @@ import router.models.Message;
  * Environment variables configure the listening port and the server's response message.
  */
 
-
 public class ServerApp {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         int port = Integer.parseInt(System.getenv().getOrDefault("SERVER_PORT", "6003"));
-        String serverMsg = System.getenv().getOrDefault("SERVER_MSG", "Hello from server!");
-
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server started on port " + port);
-
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("Client connected: " + clientSocket.getRemoteSocketAddress());
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                Gson gson = new Gson();
-
-                String line;
-                while ((line = in.readLine()) != null) {
-                    Message msg = gson.fromJson(line, Message.class);
-                    System.out.println("Received from router: " + msg.getMessage());
-
-                    // Cevap olarak server mesajını döndür
-                    msg.setMessage(serverMsg + " | Echo: " + msg.getMessage());
-                    out.println(gson.toJson(msg));
-                    // break; // İstersen bir mesajdan sonra kapatma, yoksa kalıcı açık kalabilir.
-                }
-                clientSocket.close();
-                System.out.println("Client disconnected");
+                new Thread(() -> {
+                    try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+                        String msg = in.readLine();
+                        System.out.println("Received: " + msg);
+                        out.println("Reply from server: " + msg.toUpperCase());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
+

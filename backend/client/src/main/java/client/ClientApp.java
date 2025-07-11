@@ -2,8 +2,6 @@ package client;
 
 import java.io.*;
 import java.net.*;
-import com.google.gson.Gson;
-import router.models.Message;
 /**
  * ClientApp connects to the central router using TCP,
  * sends a serialized message (JSON) to a target server,
@@ -17,33 +15,33 @@ import router.models.Message;
 
 public class ClientApp {
     public static void main(String[] args) {
-        String routerHost = System.getenv().getOrDefault("ROUTER_HOST", "router");
-        int routerPort = Integer.parseInt(System.getenv().getOrDefault("ROUTER_PORT", "6003"));
-        String clientId = System.getenv().getOrDefault("CLIENT_ID", "client-" + System.currentTimeMillis());
-        String targetServer = System.getenv().getOrDefault("SERVER_HOST", "java-message-server");
-        String clientMsg = System.getenv().getOrDefault("CLIENT_MSG", "Hello from client!");
+        String serverHost = System.getenv().getOrDefault("SERVER_HOST", "localhost");
+        int serverPort = Integer.parseInt(System.getenv().getOrDefault("SERVER_PORT", "6003"));
+        String msg = System.getenv().getOrDefault("CLIENT_MSG", "Hello from client");
 
-        Gson gson = new Gson();
+        int retries = 5;
+        int delay = 2000; // 2 seconds
 
-        try (Socket socket = new Socket(routerHost, routerPort);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+        while (retries-- > 0) {
+            try (Socket socket = new Socket(serverHost, serverPort);
+                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            System.out.println("Connected to router");
+                out.println(msg);
+                String reply = in.readLine();
+                System.out.println("Received from server: " + reply);
+                return;
 
-            // Send message as JSON to router
-            Message msg = new Message();
-            msg.setClientId(clientId);
-            msg.setTargetIp(targetServer);
-            msg.setMessage(clientMsg);
-            out.println(gson.toJson(msg));
-
-            // Get the response from the router
-            String response = in.readLine();
-            System.out.println("Router replied: " + response);
-
-        } catch (Exception e) {
-            e.printStackTrace();
+            } catch (IOException e) {
+                System.out.println("Connection failed, retrying...");
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException ie) {
+                    break;
+                }
+            }
         }
+
+        System.out.println("Failed to connect to server after retries.");
     }
 }

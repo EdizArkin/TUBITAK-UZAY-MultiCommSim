@@ -5,30 +5,20 @@ networks:
     driver: bridge
 
 services:
-  router:
-    build:
-      context: ../backend/router
-      dockerfile: ../../docker/Dockerfile-router
-    container_name: router
-    networks:
-      - simnet
-    ports:
-      - "6003:6003"
-
   server:
     build:
       context: ../backend/server
       dockerfile: ../../docker/Dockerfile-server
-    container_name: java-message-server
     image: java-message-server:latest
     networks:
       - simnet
+    expose:
+      - "6003"  # 6003 portu sadece diğer container'lar tarafından erişilebilir
 
   client:
     build:
       context: ../backend/client
       dockerfile: ../../docker/Dockerfile-client
-    container_name: java-message-client
     image: java-message-client:latest
     depends_on:
       - server
@@ -44,8 +34,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "5000:5000"
-    depends_on:
-      - server
     networks:
       - simnet
 

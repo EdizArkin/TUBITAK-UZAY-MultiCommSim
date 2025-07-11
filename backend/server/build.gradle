@@ -3,7 +3,6 @@ application {
 }
 
 dependencies {
-    implementation project(':router')
 }
 
 shadowJar {
