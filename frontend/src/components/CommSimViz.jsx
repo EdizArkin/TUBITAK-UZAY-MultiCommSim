@@ -8,6 +8,7 @@ import {
   getClientList
 } from "../utils/api";
 import './CommSimViz.css';
+import { getClientNumberedList} from '../utils/logUtils';
 
 export default function MultiCommSim() {
   const [servers, setServers] = useState([]);
@@ -107,15 +108,47 @@ export default function MultiCommSim() {
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
-  // Aktif client'ın bağlı olduğu server'ı bulmak için yardımcı fonksiyon
-  function getClientServerId(clientName) {
-    // client-xxxxxx ise, backend'den client-server eşleşmesini almak gerekir.
-    // Şu an sadece sıralama ile eşleştiriyoruz, daha iyi eşleşme için backend'den client-server eşleşmesi alınabilir.
-    // Şimdilik client'ın index'i ile servers listesinden id alıyoruz.
-    const idx = clients.findIndex(c => c.name === clientName);
-    if (servers[idx]) return servers[idx].id;
-    return null;
+
+  // Client logundan server id çek
+  function extractServerIdFromClientLog(log) {
+    if (!log) return null;
+    const match = log.match(/Connected to server at docker-server-(\d+):6003/);
+    return match ? parseInt(match[1], 10) : null;
   }
+
+  // Logları client-server gerçek bağlantısına göre gruplandır
+  function groupLogsByRealConnection(logs) {
+    const serverLogs = {};
+    const clientLogs = {};
+
+    Object.entries(logs).forEach(([name, log]) => {
+      if (name.startsWith('docker-server-')) {
+        const id = parseInt(name.replace('docker-server-', ''), 10);
+        serverLogs[id] = log;
+      } else if (name.startsWith('client-')) {
+        const serverId = extractServerIdFromClientLog(log);
+        clientLogs[name] = { log, serverId };
+      }
+    });
+
+    // Her client'ın bağlı olduğu server ile eşleştir
+    const pairs = [];
+    let idx = 1;
+    Object.entries(clientLogs).forEach(([clientName, { log: clientLog, serverId }]) => {
+      pairs.push({
+        index: idx++,
+        serverId,
+        clientName,
+        clientLog,
+        serverLog: serverId ? serverLogs[serverId] : null
+      });
+    });
+    return pairs;
+  }
+
+
+  // Aktif client listesi: numaralandırılmış ve serverId ile
+  const numberedClients = getClientNumberedList(clients);
 
   // Serverları id'ye göre sırala
   const sortedServers = [...servers].sort((a, b) => a.id - b.id);
@@ -185,35 +218,6 @@ export default function MultiCommSim() {
         </tbody>
       </table>
     );
-  }
-
-  // Logları server-client eşleşmesine göre gruplandır
-  function groupLogsByIndex(logs) {
-    // server: docker-server-1, client: client-xxxxxx
-    const servers = Object.keys(logs)
-      .filter(name => name.startsWith('docker-server-'))
-      .sort((a, b) => {
-        const na = parseInt(a.replace('docker-server-', ''), 10);
-        const nb = parseInt(b.replace('docker-server-', ''), 10);
-        return na - nb;
-      });
-    const clients = Object.keys(logs)
-      .filter(name => name.startsWith('client-'))
-      .sort();
-
-    // Eşleştirme: index bazlı (server1-client1, server2-client2)
-    const pairs = [];
-    const maxLen = Math.max(servers.length, clients.length);
-    for (let i = 0; i < maxLen; ++i) {
-      pairs.push({
-        serverName: servers[i] || null,
-        clientName: clients[i] || null,
-        serverLog: servers[i] ? logs[servers[i]] : null,
-        clientLog: clients[i] ? logs[clients[i]] : null,
-        index: i + 1
-      });
-    }
-    return pairs;
   }
 
   return (
@@ -290,25 +294,25 @@ export default function MultiCommSim() {
 
         {/* Aktif Clientlar */}
         <h3 className="text-lg font-semibold mb-2 mt-4">💻 Active Clients</h3>
-        {clients.length === 0 ? (
+        {numberedClients.length === 0 ? (
           <p className="text-gray-400">No active clients.</p>
         ) : (
           <ul className="pl-0">
-            {clients.map((c, i) => {
-              const serverId = getClientServerId(c.name);
-              return (
-                <li key={i} className="flex items-center gap-2 mb-1">
-                  <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                  <span className="font-bold text-green-700">{c.name}</span>
-                  {serverId && (
-                    <span className="ml-2 text-gray-500 text-sm flex items-center">
-                      <span className="mx-1">→</span>
-                      <span className="font-bold text-indigo-700">Server #{serverId}</span>
-                    </span>
-                  )}
-                </li>
-              );
-            })}
+            {numberedClients.map((c, i) => (
+              <li key={i} className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-black mr-1">#{c.clientNum}</span>
+                <span className="font-mono text-gray-800">{c.name || c.clientId}</span>
+                <span className="inline-block w-3 h-3 rounded-full bg-green-500 ml-1"></span>
+                {c.serverId ? (
+                  <span className="ml-2 text-gray-500 text-sm flex items-center">
+                    <span className="mx-1">→</span>
+                    <span className="font-bold text-indigo-700">Server #{c.serverId}</span>
+                  </span>
+                ) : (
+                  <span className="ml-2 text-gray-400 text-xs">(No server)</span>
+                )}
+              </li>
+            ))}
           </ul>
         )}
       </div>
@@ -320,11 +324,11 @@ export default function MultiCommSim() {
           <p className="text-gray-400">No logs yet.</p>
         ) : (
           <>
-            {/* Server #N & Client #N Logs kutuları */}
-            {groupLogsByIndex(logs).map(({ serverName, clientName, serverLog, clientLog, index }) => (
+            {/* Server & Client gerçek bağlantı eşleşmesiyle log kutuları */}
+            {groupLogsByRealConnection(logs).map(({ index, serverId, clientName, clientLog, serverLog }) => (
               <div key={index} className="mb-8 border rounded-lg p-4 bg-gray-50">
                 <div className="font-bold text-lg mb-2">
-                  Server #{index} & Client #{index} Logs
+                  #{index} - Server #{serverId || '?'} & {clientName} Logs
                 </div>
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Client Logs */}
@@ -398,6 +402,10 @@ export default function MultiCommSim() {
 }
 
 function Modal({ title, onClose, onSubmit, creating, error, fields }) {
+  // Check if there is a select field and if its value is empty
+  const hasSelect = fields.some(f => f.type === 'select');
+  const selectValue = fields.find(f => f.type === 'select')?.value;
+  const doneDisabled = creating || (hasSelect && !selectValue);
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded shadow max-w-sm w-full">
@@ -431,8 +439,8 @@ function Modal({ title, onClose, onSubmit, creating, error, fields }) {
         <div className="flex justify-end gap-2">
           <button
             onClick={onSubmit}
-            disabled={creating}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            disabled={doneDisabled}
+            className={`px-4 py-2 rounded ${doneDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white'}`}
           >
             {creating ? 'Processing...' : 'Done'}
           </button>

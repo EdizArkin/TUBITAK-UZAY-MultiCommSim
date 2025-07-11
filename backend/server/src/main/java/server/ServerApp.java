@@ -1,7 +1,11 @@
 package server;
 
+
 import java.io.*;
 import java.net.*;
+import common.Message;
+import common.LogEntry;
+import common.JsonUtils;
 
 /**
  * ServerApp listens on a specified TCP port (default 6003) for incoming connections from the router.
@@ -23,13 +27,26 @@ public class ServerApp {
                 new Thread(() -> {
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                          PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-                        System.out.println("Client connected: " + clientAddress + "(ClientApp Address)");
-                        String msg = in.readLine();
-                        if (msg != null) {
-                            System.out.println("Received from client: " + msg);
-                            String reply = "Reply from server: " + msg.toUpperCase();
-                            out.println(reply);
-                            System.out.println("Sent to client: " + reply);
+                        System.out.println("Client connected: " + clientAddress + " (ClientApp Address)");
+                        String msgJson = in.readLine();
+                        System.out.println("RAW: " + msgJson);
+                        if (msgJson != null) {
+                            // Parse incoming message as Message object
+                            Message clientMsg = null;
+                            try {
+                                clientMsg = JsonUtils.fromJson(msgJson, Message.class);
+                            } catch (Exception e) {
+                                System.out.println("Invalid message format: " + msgJson);
+                            }
+                            if (clientMsg != null) {
+                                LogEntry log = new LogEntry(clientMsg.getClientId(), 1, "Client Sends", clientMsg.getMessage());
+                                System.out.println(JsonUtils.toJson(log));
+                                // Prepare reply as JSON
+                                Message replyMsg = new Message(null, 1, null, "Reply from server: " + clientMsg.getMessage().toUpperCase(), "Server Reply");
+                                out.println(JsonUtils.toJson(replyMsg));
+                                LogEntry serverLog = new LogEntry(clientMsg.getClientId(), 1, "Server Reply", replyMsg.getMessage());
+                                System.out.println(JsonUtils.toJson(serverLog));
+                            }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();

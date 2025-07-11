@@ -112,7 +112,30 @@ def list_clients():
     clients = []
     for container in docker_client.containers.list(all=True):
         if container.name.startswith("client-"):
-            clients.append({"name": container.name})
+            server_id = None
+            try:
+                import sys
+                envs = container.attrs.get('Config', {}).get('Env', [])
+                app.logger.warning(f"[DEBUG] {container.name} envs: {envs}")
+                sys.stderr.flush()
+                for env in envs:
+                    if env.startswith('SERVER_HOST='):
+                        server_host_value = env.split('=', 1)[1]
+                        app.logger.warning(f"[DEBUG] {container.name} SERVER_HOST env: '{server_host_value}'")
+                        sys.stderr.flush()
+                        match = re.search(r"docker-server-(\d+)", server_host_value)
+                        app.logger.warning(f"[DEBUG] {container.name} regex search: {match}")
+                        sys.stderr.flush()
+                        if match:
+                            server_id = int(match.group(1))
+            except Exception as e:
+                app.logger.warning(f"[DEBUG] Exception for {container.name}: {e}")
+                sys.stderr.flush()
+            clients.append({
+                "clientId": container.name,
+                "serverId": server_id,
+                "envs": envs  # DEBUG: Return envs for inspection
+            })
     return jsonify(clients)
 
 

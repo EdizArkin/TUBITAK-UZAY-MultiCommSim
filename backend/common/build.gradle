@@ -1,0 +1,15 @@
+// No shadowJar or application plugin needed for common module
+plugins {
+    id 'java'
+}
+
+group 'common'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.10.1'
+}

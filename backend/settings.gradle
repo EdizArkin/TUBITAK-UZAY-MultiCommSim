@@ -8,6 +8,8 @@
 
 rootProject.name = 'backend'
 
+
+include 'common'
 include 'client'
 include 'server'
 
