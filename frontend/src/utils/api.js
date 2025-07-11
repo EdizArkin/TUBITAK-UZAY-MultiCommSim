@@ -26,6 +26,12 @@ export async function getServerList() {
   return res.json();
 }
 
+export async function getClientList() {
+  const res = await fetch(`${API_URL}/clients`);
+  if (!res.ok) throw new Error('Failed to fetch client list');
+  return res.json();
+}
+
 export async function runTest() {
   const res = await fetch(`${API_URL}/run-test`, {
     method: 'POST'

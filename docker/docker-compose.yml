@@ -13,7 +13,7 @@ services:
     networks:
       - simnet
     expose:
-      - "6003"  # 6003 portu sadece diğer container'lar tarafından erişilebilir
+      - "6003"  
 
   client:
     build:

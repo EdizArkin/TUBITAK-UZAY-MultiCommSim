@@ -30,6 +30,11 @@ public class ClientApp {
                 out.println(msg);
                 String reply = in.readLine();
                 System.out.println("Received from server: " + reply);
+                // Client container canlı kalsın (örn. 60 saniye)
+                try {
+                    System.out.println("Client will stay alive for 60 seconds...");
+                    Thread.sleep(60000);
+                } catch (InterruptedException ignored) {}
                 return;
 
             } catch (IOException e) {

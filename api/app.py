@@ -60,7 +60,6 @@ def create_client():
             if server_container.status != "running":
                 server_container.reload()
             if server_container.status == "running":
-                # Check if it has an IP in docker_simnet
                 net_info = server_container.attrs.get("NetworkSettings", {}).get("Networks", {}).get("docker_simnet", {})
                 if net_info and net_info.get("IPAddress"):
                     break
@@ -70,6 +69,7 @@ def create_client():
     else:
         return jsonify({"error": f"Server container {server_container_name} not ready"}), 500
 
+    # Start client container in interactive mode and keep it alive until run-test
     container = docker_client.containers.run(
         "java-message-client",
         name=client_id,
@@ -80,7 +80,9 @@ def create_client():
             "SERVER_HOST": server_container_name,
             "SERVER_PORT": "6003"
         },
-        network="docker_simnet"
+        network="docker_simnet",
+        tty=True,  # keep container open
+        command=["sh", "-c", "java -cp app.jar client.ClientApp && tail -f /dev/null"]
     )
 
     return jsonify({
@@ -102,6 +104,16 @@ def list_servers():
                 "name": container.name
             })
     return jsonify(servers)
+
+
+
+@app.route('/clients', methods=['GET'])
+def list_clients():
+    clients = []
+    for container in docker_client.containers.list(all=True):
+        if container.name.startswith("client-"):
+            clients.append({"name": container.name})
+    return jsonify(clients)
 
 
 

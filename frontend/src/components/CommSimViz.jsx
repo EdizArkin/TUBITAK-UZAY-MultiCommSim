@@ -4,12 +4,14 @@ import {
   createClient,
   getServerList,
   fetchLogs,
-  runTest
+  runTest,
+  getClientList
 } from "../utils/api";
 import './CommSimViz.css';
 
 export default function MultiCommSim() {
   const [servers, setServers] = useState([]);
+  const [clients, setClients] = useState([]);
   const [logs, setLogs] = useState({});
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -26,6 +28,8 @@ export default function MultiCommSim() {
 
   useEffect(() => {
     fetchServers();
+    fetchClients();
+    fetchLogs().then(setLogs).catch(() => {});
   }, []);
 
   async function fetchServers() {
@@ -37,6 +41,15 @@ export default function MultiCommSim() {
     }
   }
 
+  async function fetchClients() {
+    try {
+      const data = await getClientList();
+      setClients(data);
+    } catch {
+      setClients([]);
+    }
+  }
+
   async function handleCreateServer() {
     setCreating(true);
     try {
@@ -44,6 +57,7 @@ export default function MultiCommSim() {
       await fetchServers();
       setShowServerForm(false);
       setServerMsg('');
+      setError(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -58,6 +72,8 @@ export default function MultiCommSim() {
       setShowClientForm(false);
       setClientMsg('');
       setSelectedServerId('');
+      await fetchClients();
+      setError(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -70,6 +86,7 @@ export default function MultiCommSim() {
     try {
       const data = await runTest();
       setLogs(data);
+      await fetchClients();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,11 +97,32 @@ export default function MultiCommSim() {
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(async () => {
-      const data = await fetchLogs();
-      setLogs(data);
+      try {
+        await fetchServers();
+        await fetchClients();
+        const data = await fetchLogs();
+        setLogs(data);
+      } catch {}
     }, 5000);
     return () => clearInterval(interval);
   }, [autoRefresh]);
+
+  // Logları detaylı ve insan okunur şekilde hazırla
+  function parseLog(log, who) {
+    if (!log) return [];
+    return log
+      .split('\n')
+      .filter(Boolean)
+      .map((line, idx) => {
+        if (line.toLowerCase().includes('received')) {
+          return <div key={idx} className="text-blue-700">{who} aldı: <span className="font-mono">{line}</span></div>;
+        }
+        if (line.toLowerCase().includes('reply')) {
+          return <div key={idx} className="text-green-700">{who} dedi: <span className="font-mono">{line}</span></div>;
+        }
+        return <div key={idx} className="text-gray-700">{line}</div>;
+      });
+  }
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen font-sans">
@@ -94,7 +132,23 @@ export default function MultiCommSim() {
           MultiCommSim Visualizer (Optimized)
         </h1>
       </div>
+    {/* Üstte client-server ikonları ve iletişim animasyonu */}
+    <div className="flex justify-center items-center my-10 relative">
+        <div className="flex flex-col items-center">
+          <div className="node client-node">💻</div>
+          <span className="icon-label">Client</span>
+        </div>
+        <div className="comm-line mx-6 relative z-0">
+          <div className="pulse-line green-glow"></div>
+          <div className="pulse-line blue-glow delay-1"></div>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="node server-node">🖥️</div>
+          <span className="icon-label">Server</span>
+        </div>
+      </div>
 
+      {/* Dashboard */}
       <div className="max-w-6xl mx-auto bg-white p-6 rounded shadow mb-6">
         <div className="flex justify-between items-center bg-indigo-50 p-4 rounded mb-4">
           <div className="flex gap-3">
@@ -104,7 +158,11 @@ export default function MultiCommSim() {
             <button onClick={() => setShowClientForm(true)} className="btn-primary">
               ➕ Add Client
             </button>
-            <button onClick={handleRunTest} className="btn-secondary">
+            <button
+              onClick={handleRunTest}
+              className={`btn-secondary${servers.length === 0 || clients.length === 0 ? ' opacity-50 cursor-not-allowed' : ''}`}
+              disabled={servers.length === 0 || clients.length === 0 || loading}
+            >
               {loading ? 'Running...' : '🧪 Run Test'}
             </button>
           </div>
@@ -119,41 +177,71 @@ export default function MultiCommSim() {
           </label>
         </div>
 
+        {/* Aktif Serverlar */}
         <h3 className="text-lg font-semibold mb-2">🖥️ Active Servers</h3>
         {servers.length === 0 ? (
           <p className="text-gray-400">No active servers.</p>
         ) : (
-          <ul className="list-disc pl-5 text-sm">
+          <ul className="pl-0 mb-4">
             {servers.map(s => (
-              <li key={s.id}>
-                Server #{s.id} — Container: {s.name}
+              <li key={s.id} className="flex items-center gap-2 mb-1">
+                <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                <span className="font-bold text-indigo-700">#{s.id}</span>
+                <span className="text-gray-700">{s.name}</span>
+                <span className="ml-2 text-xs text-gray-500">Port: 6003</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Aktif Clientlar */}
+        <h3 className="text-lg font-semibold mb-2 mt-4">💻 Active Clients</h3>
+        {clients.length === 0 ? (
+          <p className="text-gray-400">No active clients.</p>
+        ) : (
+          <ul className="pl-0">
+            {clients.map((c, i) => (
+              <li key={i} className="flex items-center gap-2 mb-1">
+                <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                <span className="font-bold text-green-700">{c.name}</span>
               </li>
             ))}
           </ul>
         )}
       </div>
 
+      {/* Loglar */}
       <div className="max-w-6xl mx-auto bg-white p-6 rounded shadow">
         <h3 className="text-lg font-semibold mb-4">📄 Logs</h3>
         {Object.keys(logs).length === 0 ? (
           <p className="text-gray-400">No logs yet.</p>
         ) : (
-          Object.entries(logs).map(([name, output]) => {
-            const lines = output.split('\n').filter(Boolean);
-            return (
-              <div key={name} className="mb-4 border rounded">
-                <div className="bg-indigo-100 px-3 py-1 font-bold">{name}</div>
-                <div className="bg-gray-50 p-3 text-sm whitespace-pre-wrap max-h-48 overflow-auto">
-                  {lines.map((line, i) => (
-                    <div key={i}>{line}</div>
-                  ))}
+          <>
+            {/* Server Logları */}
+            <h4 className="font-semibold text-indigo-700 mb-2">🖥️ Server Logs</h4>
+            {servers.map(s => (
+              <div key={s.name} className="mb-4 border rounded p-3 bg-gray-50">
+                <div className="font-bold mb-1">{s.name} (Port: 6003)</div>
+                <div className="text-sm whitespace-pre-wrap">
+                  {parseLog(logs[s.name], "Server")}
                 </div>
               </div>
-            );
-          })
+            ))}
+            {/* Client Logları */}
+            <h4 className="font-semibold text-green-700 mb-2 mt-6">💻 Client Logs</h4>
+            {clients.map(c => (
+              <div key={c.name} className="mb-4 border rounded p-3 bg-gray-50">
+                <div className="font-bold mb-1">{c.name}</div>
+                <div className="text-sm whitespace-pre-wrap">
+                  {parseLog(logs[c.name], "Client")}
+                </div>
+              </div>
+            ))}
+          </>
         )}
       </div>
 
+      {/* Modal: Server */}
       {showServerForm && (
         <Modal
           title="➕ Add Server"
@@ -171,6 +259,7 @@ export default function MultiCommSim() {
         />
       )}
 
+      {/* Modal: Client */}
       {showClientForm && (
         <Modal
           title="➕ Add Client"
