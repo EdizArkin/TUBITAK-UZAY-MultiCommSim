@@ -120,51 +120,71 @@ export default function MultiCommSim() {
   // Serverları id'ye göre sırala
   const sortedServers = [...servers].sort((a, b) => a.id - b.id);
 
-  // Logları detaylı ve insan okunur şekilde hazırla
-  function parseLog(log, who) {
-    if (!log) return [];
-    return log
+  // Logları detaylı ve insan okunur şekilde tablo halinde hazırla
+  function parseLogTable(log) {
+    if (!log) return null;
+    // Her log satırını türüne göre ayır
+    const rows = log
       .split('\n')
       .filter(Boolean)
-      .map((line, idx) => {
-        // Server başlatıldı
+      .map((line) => {
+        // Service log editing
         if (/server started/i.test(line)) {
-          return <div key={idx} className="text-indigo-700">Start info: <span className="font-mono">{line}</span></div>;
+          return { type: "Start info", msg: line, color: "text-indigo-700" };
         }
-        // Client bağlandı
         if (/client connected/i.test(line)) {
-          return <div key={idx} className="text-indigo-700">Client Connection: <span className="font-mono">{line}</span></div>;
+          return { type: "Client Connection", msg: line, color: "text-indigo-700" };
         }
-        // Client'ın serverdan aldığı mesaj
-        if (/received from server/i.test(line)) {
-          return <div key={idx} className="text-blue-700">Client Recived: <span className="font-mono">{line.replace('Received from server:', '').trim()}</span></div>;
-        }
-        // Server'ın client'tan aldığı mesaj
         if (/received from client/i.test(line)) {
-          return <div key={idx} className="text-blue-700">Server Recived: <span className="font-mono">{line.replace('Received from client:', '').trim()}</span></div>;
+          return { type: "Server Received", msg: line, color: "text-blue-700" };
         }
-        // Sadece "Received:" ile başlayanlar (server aldı)
-        if (/^received:/i.test(line)) {
-          return <div key={idx} className="text-blue-700">Server Recived: <span className="font-mono">{line.replace('Received:', '').trim()}</span></div>;
-        }
-        // Server'ın client'a gönderdiği yanıt
-        if (/sent to client/i.test(line)) {
-          return <div key={idx} className="text-green-700">Server Replide: <span className="font-mono">{line.replace('Sent to client:', '').trim()}</span></div>;
-        }
-        // Reply/Echo içeriyorsa (client veya server yanıtı)
         if (/reply from server/i.test(line)) {
-          return <div key={idx} className="text-green-700">Client Recived: <span className="font-mono">{line.replace('Reply from server:', '').trim()}</span></div>;
+          return { type: "Server Replies", msg: line, color: "text-green-700" };
         }
+        if (/sent to client/i.test(line)) {
+          return { type: "Servers Response", msg: line.replace('Sent to client:', '').trim(), color: "text-green-700" };
+        }
+        
+        // Clients log editing
+        if (/connected to server/i.test(line)) {
+          return { type: "Client Connection", msg: line, color: "text-indigo-700" };
+        }
+        if (/sending message to server/i.test(line)) {
+          return { type: "Client Sends", msg: line, color: "text-indigo-700" };
+        }
+        if (/received from server/i.test(line)) {
+          return { type: "Client Received", msg: line.replace('Received from server:', '').trim(), color: "text-blue-700" };
+        }
+
+        // General logs
         if (/echo/i.test(line)) {
-          return <div key={idx} className="text-green-700">Echo: <span className="font-mono">{line}</span></div>;
+          return { type: "Echo", msg: line, color: "text-green-700" };
         }
-        // Client'ın alive mesajı
         if (/will stay alive/i.test(line)) {
-          return <div key={idx} className="text-gray-700">{line}</div>;
+          return { type: "Info", msg: line, color: "text-gray-700" };
         }
-        // Diğer tüm satırlar
-        return <div key={idx} className="text-gray-700">{line}</div>;
+        return { type: "Other", msg: line, color: "text-gray-700" };
       });
+
+    if (rows.length === 0) return <span className="text-gray-400">No log.</span>;
+    return (
+      <table className="min-w-full text-sm border border-gray-200 rounded">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="px-2 py-1 border-b text-left">Type</th>
+            <th className="px-2 py-1 border-b text-left">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, idx) => (
+            <tr key={idx}>
+              <td className={`px-2 py-1 border-b font-semibold ${row.color}`}>{row.type}</td>
+              <td className={`px-2 py-1 border-b font-mono ${row.color}`}>{row.msg}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   }
 
   // Logları server-client eşleşmesine göre gruplandır
@@ -311,14 +331,14 @@ export default function MultiCommSim() {
                   <div className="flex-1">
                     <div className="font-semibold text-green-700 mb-1">💻 Client Logs</div>
                     <div className="log-card-body">
-                      {clientLog ? parseLog(clientLog, "Client") : <span className="text-gray-400">No client log.</span>}
+                      {clientLog ? parseLogTable(clientLog) : <span className="text-gray-400">No client log.</span>}
                     </div>
                   </div>
                   {/* Server Logs */}
                   <div className="flex-1">
                     <div className="font-semibold text-indigo-700 mb-1">🖥️ Server Logs</div>
                     <div className="log-card-body">
-                      {serverLog ? parseLog(serverLog, "Server") : <span className="text-gray-400">No server log.</span>}
+                      {serverLog ? parseLogTable(serverLog) : <span className="text-gray-400">No server log.</span>}
                     </div>
                   </div>
                 </div>

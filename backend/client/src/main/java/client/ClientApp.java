@@ -20,7 +20,7 @@ public class ClientApp {
         String msg = System.getenv().getOrDefault("CLIENT_MSG", "Hello from client");
 
         int retries = 5;
-        int delay = 2000; // 2 seconds
+        int delay = 1500; // 1,5 seconds
 
         while (retries-- > 0) {
             try (Socket socket = new Socket(serverHost, serverPort);
@@ -34,6 +34,7 @@ public class ClientApp {
                 String reply = in.readLine();
                 System.out.println("Received from server: " + reply);
                 // Client container canlı kalsın (örn. 60 saniye)
+                //aşşağıdaki çıkartılabilir
                 try {
                     System.out.println("Client will stay alive for 60 seconds...");
                     Thread.sleep(60000);
