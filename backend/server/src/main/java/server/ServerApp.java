@@ -19,6 +19,8 @@ import common.JsonUtils;
 public class ServerApp {
     public static void main(String[] args) {
         int port = Integer.parseInt(System.getenv().getOrDefault("SERVER_PORT", "6003"));
+        int serverId = Integer.parseInt(System.getenv().getOrDefault("SERVER_ID", "1"));
+        String serverMsg = System.getenv().getOrDefault("SERVER_MSG", "Hello from Server");
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server started on port " + port);
             while (true) {
@@ -39,12 +41,12 @@ public class ServerApp {
                                 System.out.println("Invalid message format: " + msgJson);
                             }
                             if (clientMsg != null) {
-                                LogEntry log = new LogEntry(clientMsg.getClientId(), 1, "Client Sends", clientMsg.getMessage());
+                                LogEntry log = new LogEntry(clientMsg.getClientId(), serverId, "Client Sends", clientMsg.getMessage());
                                 System.out.println(JsonUtils.toJson(log));
-                                // Prepare reply as JSON
-                                Message replyMsg = new Message(null, 1, null, "Reply from server: " + clientMsg.getMessage().toUpperCase(), "Server Reply");
+                                // Prepare reply as JSON, use serverMsg (from env) instead of clientMsg.getMessage()
+                                Message replyMsg = new Message(null, serverId, null, "Reply from server: " + serverMsg, "Server Reply");
                                 out.println(JsonUtils.toJson(replyMsg));
-                                LogEntry serverLog = new LogEntry(clientMsg.getClientId(), 1, "Server Reply", replyMsg.getMessage());
+                                LogEntry serverLog = new LogEntry(clientMsg.getClientId(), serverId, "Server Reply", replyMsg.getMessage());
                                 System.out.println(JsonUtils.toJson(serverLog));
                             }
                         }

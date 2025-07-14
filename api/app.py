@@ -29,7 +29,8 @@ def create_server():
         detach=True,
         environment={
             "SERVER_PORT": "6003",
-            "SERVER_MSG": server_msg
+            "SERVER_MSG": server_msg,
+            "SERVER_ID": server_id
         },
         network="docker_simnet"
     )
@@ -141,24 +142,79 @@ def list_clients():
 
 
 @app.route('/run-test', methods=['POST'])
+
 def run_test():
     time.sleep(5)
 
     logs = {}
     containers = docker_client.containers.list(all=True)
-    for container in containers:
-        # Sadece docker-server- ve client- ile başlayanlar
-        if container.name.startswith("docker-server-") or container.name.startswith("client-"):
-            try:
-                # Container'ın durumu ve logu
-                container.reload()
-                status = container.status
-                log_output = container.logs(stdout=True, stderr=True).decode('utf-8', errors='replace')
-                if not log_output.strip():
-                    log_output = f"[WARN] No logs captured from {container.name} (status: {status})"
-                logs[container.name] = log_output
-            except Exception as e:
-                logs[container.name] = f"[ERROR] Could not fetch logs: {str(e)}"
+    # Sunucuları id'ye göre sırala
+    server_containers = sorted(
+        [c for c in containers if c.name.startswith("docker-server-")],
+        key=lambda c: int(re.match(r"docker-server-(\d+)", c.name).group(1))
+    )
+    # Client'ları isim sırasına göre sırala (veya istenirse başka bir kritere göre)
+    client_containers = sorted(
+        [c for c in containers if c.name.startswith("client-")],
+        key=lambda c: c.name
+    )
+
+
+    # Kullanıcı dostu özetli log başlıkları ve içerikleri
+    for idx, server in enumerate(server_containers, 1):
+        try:
+            server.reload()
+            status = server.status
+            log_output = server.logs(stdout=True, stderr=True).decode('utf-8', errors='replace')
+            if not log_output.strip():
+                log_output = f"[WARN] No logs captured from {server.name} (status: {status})"
+            # Sadece önemli satırları öne çıkar
+            lines = log_output.splitlines()
+            pretty_lines = []
+            for line in lines:
+                if 'Server started' in line:
+                    pretty_lines.append(f"🟢 [Started] {line}")
+                elif 'Client connected' in line:
+                    pretty_lines.append(f"🔗 [Connection] {line}")
+                elif 'RAW:' in line:
+                    pretty_lines.append(f"⬇️ [Incoming JSON] {line.replace('RAW: ', '')}")
+                elif 'type":"Client Sends"' in line:
+                    pretty_lines.append(f"✉️ [Client Message] {line}")
+                elif 'type":"Server Reply"' in line:
+                    pretty_lines.append(f"✅ [Server Reply] {line}")
+                else:
+                    pretty_lines.append(f"{line}")
+            logs[f"🖥️ Server #{idx}"] = '\n'.join(pretty_lines)
+        except Exception as e:
+            logs[f"🖥️ Server #{idx}"] = f"[ERROR] Could not fetch logs: {str(e)}"
+
+    for idx, client in enumerate(client_containers, 1):
+        try:
+            client.reload()
+            status = client.status
+            log_output = client.logs(stdout=True, stderr=True).decode('utf-8', errors='replace')
+            if not log_output.strip():
+                log_output = f"[WARN] No logs captured from {client.name} (status: {status})"
+            lines = log_output.splitlines()
+            pretty_lines = []
+            for line in lines:
+                if 'Connected to server at' in line:
+                    pretty_lines.append(f"🔗 [Connected] {line}")
+                elif 'Sending message to server:' in line:
+                    pretty_lines.append(f"✉️ [Sent] {line}")
+                elif 'Received from server:' in line:
+                    pretty_lines.append(f"✅ [Server Reply] {line}")
+                elif 'will stay alive' in line:
+                    pretty_lines.append(f"⏳ [Info] {line}")
+                elif 'type":"Client Sends"' in line:
+                    pretty_lines.append(f"✉️ [Client Message] {line}")
+                elif 'type":"Server Reply"' in line:
+                    pretty_lines.append(f"✅ [Server Reply] {line}")
+                else:
+                    pretty_lines.append(f"{line}")
+            logs[f"💻 Client #{idx}"] = '\n'.join(pretty_lines)
+        except Exception as e:
+            logs[f"💻 Client #{idx}"] = f"[ERROR] Could not fetch logs: {str(e)}"
 
     # Loglar alındıktan sonra containerları sil
     for container in containers:

@@ -109,40 +109,54 @@ export default function MultiCommSim() {
   }, [autoRefresh]);
 
 
-  // Client logundan server id çek
-  function extractServerIdFromClientLog(log) {
-    if (!log) return null;
-    const match = log.match(/Connected to server at docker-server-(\d+):6003/);
-    return match ? parseInt(match[1], 10) : null;
-  }
-
-  // Logları client-server gerçek bağlantısına göre gruplandır
+  // Logları client-server gerçek bağlantısına göre gruplandır (yeni backend log başlıklarına göre)
   function groupLogsByRealConnection(logs) {
+    // Yeni format: "🖥️ Server #1", "💻 Client #1"
     const serverLogs = {};
-    const clientLogs = {};
 
+    // Helper: Extract serverId from client log content
+    function extractServerIdFromClientLog(log) {
+      if (!log) return null;
+      // Look for: Received from server: {"serverId":N,...}
+      const match = log.match(/Received from server:.*?"serverId":(\d+)/);
+      if (match) return parseInt(match[1], 10);
+      // Or: {"serverId":N,...} in any line
+      const match2 = log.match(/"serverId":(\d+)/);
+      if (match2) return parseInt(match2[1], 10);
+      return null;
+    }
+
+    // Map: clientNum -> {clientId, serverId, log}
+    const clientNumToInfo = [];
     Object.entries(logs).forEach(([name, log]) => {
-      if (name.startsWith('docker-server-')) {
-        const id = parseInt(name.replace('docker-server-', ''), 10);
+      const serverMatch = name.match(/^🖥️ Server #(\d+)/);
+      const clientMatch = name.match(/^💻 Client #(\d+)/);
+      if (serverMatch) {
+        const id = parseInt(serverMatch[1], 10);
         serverLogs[id] = log;
-      } else if (name.startsWith('client-')) {
+      } else if (clientMatch) {
+        const clientNum = parseInt(clientMatch[1], 10);
         const serverId = extractServerIdFromClientLog(log);
-        clientLogs[name] = { log, serverId };
+        clientNumToInfo.push({ clientNum, serverId, log });
       }
     });
 
-    // Her client'ın bağlı olduğu server ile eşleştir
-    const pairs = [];
-    let idx = 1;
-    Object.entries(clientLogs).forEach(([clientName, { log: clientLog, serverId }]) => {
-      pairs.push({
-        index: idx++,
-        serverId,
-        clientName,
-        clientLog,
-        serverLog: serverId ? serverLogs[serverId] : null
-      });
-    });
+    // Sıralı ve doğru başlıklarla eşleşmiş loglar (serverId'ye göre sırala)
+    const pairs = clientNumToInfo
+      .sort((a, b) => {
+        // Önce serverId'ye göre sırala, bilinmeyenler en sona
+        if (a.serverId == null && b.serverId == null) return 0;
+        if (a.serverId == null) return 1;
+        if (b.serverId == null) return -1;
+        return a.serverId - b.serverId;
+      })
+      .map((info, idx) => ({
+        index: idx + 1,
+        serverId: info.serverId || '?',
+        clientName: `Client #${info.serverId || '?'}`,
+        clientLog: info.log,
+        serverLog: info.serverId ? serverLogs[info.serverId] || null : null
+      }));
     return pairs;
   }
 
@@ -156,46 +170,36 @@ export default function MultiCommSim() {
   // Logları detaylı ve insan okunur şekilde tablo halinde hazırla
   function parseLogTable(log) {
     if (!log) return null;
-    // Her log satırını türüne göre ayır
     const rows = log
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        // Service log editing
-        if (/server started/i.test(line)) {
-          return { type: "Start info", msg: line, color: "text-indigo-700" };
+        // New backend log format
+        if (/\[Started\]/i.test(line)) {
+          return { type: "Started", msg: line, color: "text-green-700" };
         }
-        if (/client connected/i.test(line)) {
-          return { type: "Client Connection", msg: line, color: "text-indigo-700" };
+        if (/\[Connection\]/i.test(line)) {
+          return { type: "Connection", msg: line, color: "text-indigo-700" };
         }
-        if (/received from client/i.test(line)) {
-          return { type: "Server Received", msg: line, color: "text-blue-700" };
+        if (/\[Incoming JSON\]/i.test(line)) {
+          return { type: "Incoming JSON", msg: line, color: "text-blue-700" };
         }
-        if (/reply from server/i.test(line)) {
-          return { type: "Server Replies", msg: line, color: "text-green-700" };
+        if (/\[Client Message\]/i.test(line)) {
+          return { type: "Client Message", msg: line, color: "text-indigo-700" };
         }
-        if (/sent to client/i.test(line)) {
-          return { type: "Servers Response", msg: line.replace('Sent to client:', '').trim(), color: "text-green-700" };
+        if (/\[Server Reply\]/i.test(line)) {
+          return { type: "Server Reply", msg: line, color: "text-green-700" };
         }
-        
-        // Clients log editing
-        if (/connected to server/i.test(line)) {
-          return { type: "Client Connection", msg: line, color: "text-indigo-700" };
+        if (/\[Connected\]/i.test(line)) {
+          return { type: "Connected", msg: line, color: "text-indigo-700" };
         }
-        if (/sending message to server/i.test(line)) {
-          return { type: "Client Sends", msg: line, color: "text-indigo-700" };
+        if (/\[Sent\]/i.test(line)) {
+          return { type: "Sent", msg: line, color: "text-indigo-700" };
         }
-        if (/received from server/i.test(line)) {
-          return { type: "Client Received", msg: line.replace('Received from server:', '').trim(), color: "text-blue-700" };
-        }
-
-        // General logs
-        if (/echo/i.test(line)) {
-          return { type: "Echo", msg: line, color: "text-green-700" };
-        }
-        if (/will stay alive/i.test(line)) {
+        if (/\[Info\]/i.test(line)) {
           return { type: "Info", msg: line, color: "text-gray-700" };
         }
+        // Fallback for any other line
         return { type: "Other", msg: line, color: "text-gray-700" };
       });
 
