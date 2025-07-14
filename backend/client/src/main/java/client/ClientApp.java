@@ -8,6 +8,15 @@ import common.JsonUtils;
 import common.LogEntry;
 
 
+/**
+ * ClientApp connects to a specified server (host/port) as part of the MultiCommSim simulation.
+ * - Reads configuration from environment variables (SERVER_HOST, SERVER_PORT, CLIENT_ID, CLIENT_MSG).
+ * - Sends a JSON-formatted message to the server and waits for a reply.
+ * - Logs all sent and received messages in a structured format for later analysis.
+ * - Handles connection retries and basic error handling.
+ *
+ * This client is designed to be orchestrated by the MultiCommSim API and run inside a Docker container.
+ */
 public class ClientApp {
     public static void main(String[] args) {
         String serverHost = System.getenv().getOrDefault("SERVER_HOST", "localhost");
@@ -43,8 +52,9 @@ public class ClientApp {
                         System.out.println("Invalid reply format: " + replyJson);
                     }
                 }
-                // Client container canlı kalsın (örn. 60 saniye)
-                //aşşağıdaki çıkartılabilir
+                // Keep the client container alive (e.g., 60 seconds)
+                //The structure below can be removed; it is not actively used in the current test dynamics
+                //(since all containers are forcibly terminated at the end of each test).
                 try {
                     System.out.println("Client will stay alive for 60 seconds...");
                     Thread.sleep(60000);

@@ -9,7 +9,6 @@ package common;
  * - targetIp: Hostname or IP address of the intended server.
  * - message: The content of the message to be delivered.
  *
- * Used for JSON serialization and communication through the router.
  */
 import java.time.LocalDateTime;
 

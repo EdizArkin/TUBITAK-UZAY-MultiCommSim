@@ -109,9 +109,9 @@ export default function MultiCommSim() {
   }, [autoRefresh]);
 
 
-  // Logları client-server gerçek bağlantısına göre gruplandır (yeni backend log başlıklarına göre)
+  // Group logs according to client-server actual connection (based on new backend log headers)
   function groupLogsByRealConnection(logs) {
-    // Yeni format: "🖥️ Server #1", "💻 Client #1"
+    // New format: "🖥️ Server #1", "💻 Client #1"
     const serverLogs = {};
 
     // Helper: Extract serverId from client log content
@@ -141,10 +141,9 @@ export default function MultiCommSim() {
       }
     });
 
-    // Sıralı ve doğru başlıklarla eşleşmiş loglar (serverId'ye göre sırala)
+    // Logs sorted and matched with correct headers (sorted by serverId)
     const pairs = clientNumToInfo
       .sort((a, b) => {
-        // Önce serverId'ye göre sırala, bilinmeyenler en sona
         if (a.serverId == null && b.serverId == null) return 0;
         if (a.serverId == null) return 1;
         if (b.serverId == null) return -1;
@@ -161,13 +160,13 @@ export default function MultiCommSim() {
   }
 
 
-  // Aktif client listesi: numaralandırılmış ve serverId ile
+  // Active client list: numbered and with 
+  // for active clients section
   const numberedClients = getClientNumberedList(clients);
 
-  // Serverları id'ye göre sırala
   const sortedServers = [...servers].sort((a, b) => a.id - b.id);
 
-  // Logları detaylı ve insan okunur şekilde tablo halinde hazırla
+  // Prepare logs in a detailed and user-friendly tabular format
   function parseLogTable(log) {
     if (!log) return null;
     const rows = log
@@ -232,7 +231,7 @@ export default function MultiCommSim() {
           MultiCommSim Visualizer (Optimized)
         </h1>
       </div>
-      {/* Üstte client-server ikonları ve iletişim animasyonu */}
+      {/* Client-server icons and communication animation on top */}
       <div className="flex justify-center items-center my-10 relative">
         <div className="flex flex-col items-center">
           <div className="node client-node">💻</div>
@@ -277,7 +276,7 @@ export default function MultiCommSim() {
           </label>
         </div>
 
-        {/* Aktif Serverlar */}
+        {/* Active Servers */}
         <h3 className="text-lg font-semibold mb-2">🖥️ Active Servers</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           {sortedServers.length === 0 ? (
@@ -296,7 +295,7 @@ export default function MultiCommSim() {
           )}
         </div>
 
-        {/* Aktif Clientlar */}
+        {/* Active Clients */}
         <h3 className="text-lg font-semibold mb-2 mt-4">💻 Active Clients</h3>
         {numberedClients.length === 0 ? (
           <p className="text-gray-400">No active clients.</p>
@@ -321,14 +320,14 @@ export default function MultiCommSim() {
         )}
       </div>
 
-      {/* Loglar */}
+      {/* Logs */}
       <div className="max-w-6xl mx-auto bg-white p-6 rounded shadow">
         <h3 className="text-lg font-semibold mb-4">📄 Logs</h3>
         {Object.keys(logs).length === 0 ? (
           <p className="text-gray-400">No logs yet.</p>
         ) : (
           <>
-            {/* Server & Client gerçek bağlantı eşleşmesiyle log kutuları */}
+            {/* Server & Client log boxes with real connection matching */}
             {groupLogsByRealConnection(logs).map(({ index, serverId, clientName, clientLog, serverLog }) => (
               <div key={index} className="mb-8 border rounded-lg p-4 bg-gray-50">
                 <div className="font-bold text-lg mb-2">

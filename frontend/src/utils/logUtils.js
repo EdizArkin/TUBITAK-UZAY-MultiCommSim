@@ -1,18 +1,16 @@
 // logList: [{timestamp, clientId, serverId, type, message}, ...]
 
-// Güvenli client numaralandırma: clientList dizi değilse boş dizi döner
-// Kalıcı ve stabil client numaralandırma: ilk eklenen client her zaman #1, sonra eklenenler #2, #3... olarak kalır
-// Sıralama clientId'nin ilk göründüğü sıraya göre yapılır ve bu sıra bozulmaz
+// Secure client numbering: If clientList is not an array, an empty array is returned.
+// Permanent and stable client numbering: The first added client is always #1, followed by #2, #3, etc.
+// Sorting is done according to the order in which the clientId first appears, and this order is not broken.
 const clientIdOrder = [];
 export function getClientNumberedList(clientList) {
   if (!Array.isArray(clientList)) return [];
-  // Yeni clientId'leri sıraya ekle
   clientList.forEach(client => {
     if (!clientIdOrder.includes(client.clientId)) {
       clientIdOrder.push(client.clientId);
     }
   });
-  // Sadece aktif client'lar için sıralı liste oluştur
   const activeIds = clientList.map(c => c.clientId);
   const orderedIds = clientIdOrder.filter(id => activeIds.includes(id));
   return orderedIds.map((id, idx) => {

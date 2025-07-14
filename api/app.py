@@ -1,3 +1,16 @@
+"""
+MultiCommSim API (Flask)
+-----------------------
+This Flask application provides REST endpoints to orchestrate and manage a multi-server, multi-client communication simulation using Docker containers.
+
+- Allows creation and management of server and client containers via HTTP endpoints.
+- Handles orchestration, log collection, and test execution for the simulation.
+- Provides endpoints for listing, creating, and removing servers/clients, as well as running tests and fetching logs.
+- Uses environment variables and Docker networking to configure and connect containers.
+
+This API is the main entry point for controlling the distributed simulation from the frontend or other clients.
+"""
+
 from flask import Flask, request, jsonify
 import docker
 import uuid
@@ -7,23 +20,27 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
-docker_client = docker.from_env()
+docker_containers = docker.from_env()
 
+# Ensure the custom Docker network 'docker_simnet' exists
+# This function will be called before creating any server or client containers
 def ensure_simnet_network():
     """Ensure the custom Docker network 'docker_simnet' exists."""
     try:
-        docker_client.networks.get("docker_simnet")
+        docker_containers.networks.get("docker_simnet")
     except docker.errors.NotFound:
-        docker_client.networks.create("docker_simnet", driver="bridge")
+        docker_containers.networks.create("docker_simnet", driver="bridge")
 
+# Create a server container
+# This endpoint will be called to create a new server instance
 @app.route('/create-server', methods=['POST'])
 def create_server():
     ensure_simnet_network()
     data = request.get_json()
     server_msg = data.get('serverMsg', '')
-    server_id = get_next_server_id()  # örn: 1, 2, 3...
+    server_id = get_next_server_id()  # example: 1, 2, 3...
 
-    container = docker_client.containers.run(
+    container = docker_containers.containers.run(
         "java-message-server",
         name=f"docker-server-{server_id}",
         detach=True,
@@ -41,7 +58,8 @@ def create_server():
     })
 
 
-
+# Create a client container
+# This endpoint will be called to create a new client instance
 @app.route('/create-client', methods=['POST'])
 def create_client():
     ensure_simnet_network()
@@ -57,7 +75,7 @@ def create_client():
     server_container = None
     for _ in range(10):
         try:
-            server_container = docker_client.containers.get(server_container_name)
+            server_container = docker_containers.containers.get(server_container_name)
             if server_container.status != "running":
                 server_container.reload()
             if server_container.status == "running":
@@ -71,7 +89,7 @@ def create_client():
         return jsonify({"error": f"Server container {server_container_name} not ready"}), 500
 
     # Start client container in interactive mode and keep it alive until run-test
-    container = docker_client.containers.run(
+    container = docker_containers.containers.run(
         "java-message-client",
         name=client_id,
         detach=True,
@@ -93,11 +111,12 @@ def create_client():
     })
 
 
-
+# List all servers
+# This endpoint will return a list of all server containers
 @app.route('/servers', methods=['GET'])
 def list_servers():
     servers = []
-    for container in docker_client.containers.list(all=True):
+    for container in docker_containers.containers.list(all=True):
         match = re.match(r"docker-server-(\d+)", container.name)
         if match:
             servers.append({
@@ -107,11 +126,12 @@ def list_servers():
     return jsonify(servers)
 
 
-
+# List all clients
+# This endpoint will return a list of all client containers
 @app.route('/clients', methods=['GET'])
 def list_clients():
     clients = []
-    for container in docker_client.containers.list(all=True):
+    for container in docker_containers.containers.list(all=True):
         if container.name.startswith("client-"):
             server_id = None
             try:
@@ -140,27 +160,27 @@ def list_clients():
     return jsonify(clients)
 
 
-
+# Run the test
+# This endpoint will run the test by starting all servers and clients, then collecting logs
 @app.route('/run-test', methods=['POST'])
-
 def run_test():
     time.sleep(5)
 
     logs = {}
-    containers = docker_client.containers.list(all=True)
-    # Sunucuları id'ye göre sırala
+    containers = docker_containers.containers.list(all=True)
+    # Sort servers by id
     server_containers = sorted(
         [c for c in containers if c.name.startswith("docker-server-")],
         key=lambda c: int(re.match(r"docker-server-(\d+)", c.name).group(1))
     )
-    # Client'ları isim sırasına göre sırala (veya istenirse başka bir kritere göre)
+    # Sort clients by name
     client_containers = sorted(
         [c for c in containers if c.name.startswith("client-")],
         key=lambda c: c.name
     )
 
 
-    # Kullanıcı dostu özetli log başlıkları ve içerikleri
+    # User-friendly summary log titles and contents
     for idx, server in enumerate(server_containers, 1):
         try:
             server.reload()
@@ -168,7 +188,6 @@ def run_test():
             log_output = server.logs(stdout=True, stderr=True).decode('utf-8', errors='replace')
             if not log_output.strip():
                 log_output = f"[WARN] No logs captured from {server.name} (status: {status})"
-            # Sadece önemli satırları öne çıkar
             lines = log_output.splitlines()
             pretty_lines = []
             for line in lines:
@@ -216,21 +235,22 @@ def run_test():
         except Exception as e:
             logs[f"💻 Client #{idx}"] = f"[ERROR] Could not fetch logs: {str(e)}"
 
-    # Loglar alındıktan sonra containerları sil
+    # Delete containers after logs are collected
     for container in containers:
         if container.name.startswith("docker-server-") or container.name.startswith("client-"):
             try:
                 container.remove(force=True)
             except Exception as e:
-                pass  # Silinemeyen container için hata bastırılır
+                pass
 
     return jsonify(logs)
 
 
+# Helper function to get the next server ID
 def get_next_server_id():
     existing_ids = []
-    for container in docker_client.containers.list(all=True):
-        match = re.match(r"docker-server-(\d+)", container.name)  # düzeltilmiş regex
+    for container in docker_containers.containers.list(all=True):
+        match = re.match(r"docker-server-(\d+)", container.name)
         if match:
             existing_ids.append(int(match.group(1)))
     return max(existing_ids + [0]) + 1
