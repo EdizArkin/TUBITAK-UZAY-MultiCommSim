@@ -1,39 +1,24 @@
-# 🚀 MultiCommSim – Distributed Multi-Protocol Communication Simulator
+# 🚀 MultiCommSim – Optimized Version
 
-> TÜBİTAK UZAY destekli bir proje olarak geliştirilen **MultiCommSim**, TCP/IP protokolü üzerinden birçok bağımsız peer (client-server çifti) arasında haberleşmeyi aynı IP ve port üzerinden yöneten **modüler ve ölçeklenebilir** bir simülasyon ortamı sağlar.
+> **MultiCommSim**, TÜBİTAK UZAY destekli, çoklu peer (client-server) haberleşme senaryolarını aynı IP ve tek bir port üzerinden simüle eden bir sistemdir. Bu optimize edilmiş sürümde router modülü kaldırılarak, sistemin verimliliği ve ölçeklenebilirliği artırılmıştır.
 
 ---
 
-## 📸 Arayüz Görselleri
-
-<p align="center">
-  <img src="images/image1.png" alt="Dashboard" width="700"/>
-  <img src="images/image3.png" alt="Dashboard" width="700"/>
-  <img src="images/image4.png" alt="Dashboard" width="700"/>
-  <br/>
-  <em>Gelişmiş arayüz ile eş zamanlı peer takibi ve log görüntüleme</em>
-</p>
-
-<p align="center">
-  <img src="images/image2.png" alt="Peer Creation Modal" width="500"/>
-  <br/>
-  <em>Peer oluşturma ekranı – client & server mesajları dinamik girilir</em>
-</p>
-
-## 📁 Proje Yapısı
+## 📁 Optimized Proje Yapısı
 
 ```
 MultiCommSim/
-├── client/                → Java client uygulaması
-├── server/                → Java server uygulaması
-├── router/                → Java router service (TCP yönlendirme)
+├── backend/               
+│   └── client/            → Java client uygulaması
+│   └── server/            → Java server uygulaması
+│   └── common/            → Ortak mesaj ve log modülleri
 ├── frontend/              → React UI (MultiCommSim Visualizer)
 │   └── public/, src/
 ├── api/                   → Python Flask backend (Docker kontrolü)
 ├── docker/                → Dockerfile’lar & compose dosyaları
-├── images/                → Arayüz görselleri
-├── documentation/         → Proje dokümantasyonları
-├── requirements.txt       → Python bağımlılıkları
+├── images/                → UI görselleri
+├── documentation/         → Requirements, Design, Final Report
+├── requirements.txt       → Flask için bağımlılıklar
 ├── README.md              → Bu dosya
 ```
 
@@ -41,9 +26,13 @@ MultiCommSim/
 
 ## ⚙️ Kurulum & Çalıştırma
 
-### 1️⃣ Bağımlılıkların Kurulumu
+### 1️⃣ Gereksinimler
 
-> Projeyi çalıştırmadan önce Docker yüklü olmalıdır. Ardından:
+- Docker & Docker Compose
+- Python 3.9+
+- Node.js 16+
+
+### 2️⃣ Kurulum
 
 ```bash
 git clone https://github.com/kullanici/MultiCommSim.git
@@ -51,67 +40,64 @@ cd MultiCommSim
 ```
 
 #### Python API
+
 ```bash
 cd api/
 pip install -r requirements.txt
 ```
 
 #### Frontend
+
 ```bash
 cd frontend/
 npm install
 npm run build
 ```
 
-### 2️⃣ Docker Ortamını Başlat
+### 3️⃣ Sistemi Başlat
 
 ```bash
 docker compose up --build
 ```
 
-### 3️⃣ Arayüzü Aç
+### 4️⃣ Arayüzü Aç
 
-Tarayıcıdan:
-
-```
+```bash
 http://localhost:3000
 ```
 
 ---
 
-## 🧪 Kullanım Senaryosu
+## 🧪 Kullanım Adımları
 
-1. **Add Peer** butonuyla yeni bir client-server çifti oluştur.
-2. Her peer için özel mesajlar gir (Client Msg, Server Msg).
-3. Sistem, bu peer için ayrı Docker container’larda client ve server başlatır.
-4. **Run Test** tuşuna basıldığında, client-server iletişimi router üzerinden TCP ile gerçekleşir.
-5. Tüm loglar React UI’da detaylı olarak gösterilir.
-
-> ⚙️ Dilersen "Auto Refresh" özelliğiyle her 5 saniyede bir log’lar güncellenebilir.
+1. React arayüzünde **Add Server** ile yeni bir server başlat.
+2. Listelenen serverlardan birini seçip **Add Client** üzerinden mesaj girerek client başlat.
+3. Client, seçtiğin server’a bağlanarak mesaj gönderir.
+4. **Run Test** ile tüm loglar toplanır ve arayüzde görüntülenir.
 
 ---
 
-## 🌐 Teknik Mimari Özeti
+## 🌐 Teknolojiler ve Katmanlar
 
-| Katman        | Teknoloji          | Açıklama |
-|---------------|--------------------|----------|
-| Arayüz        | React + Tailwind   | Görsel peer yönetimi ve log kontrolü |
-| API Katmanı   | Flask (Python)     | Docker ile peer oluşturma ve log çekme |
-| Routing       | Java TCP Router    | Tek port üzerinden mesaj yönlendirme |
-| Worker Peer’ler| Java              | Gerçek TCP socket haberleşmesi |
-| Konteynerleşme| Docker             | İzole peer çalıştırma ortamı |
-| Ağ             | Docker Network    | Sanal router ağı (tek port – çok peer) |
+| Katman         | Teknoloji          | Açıklama |
+|----------------|--------------------|----------|
+| **Arayüz**     | React + Tailwind   | Peer yönetimi, log takibi |
+| **API Katmanı**| Flask (Python)     | Docker container kontrolü |
+| **Routing**    | Yok (optimize)     | Client-server doğrudan TCP ile konuşur |
+| **Client/Server** | Java            | TCP Socket üzerinden mesajlaşma |
+| **İzole Ağ**   | Docker Bridge      | Tüm iletişim internal network üzerinden |
+| **Container Yönetimi** | Docker     | Her peer kendi container'ında |
 
 ---
 
 ## 🎯 Özellikler
 
-- ✅ Tek IP ve Port (6003) üzerinden sınırsız client-server eşleşmesi
-- ✅ Otomatik peer oluşturma & silme
-- ✅ Gerçek zamanlı log takibi
-- ✅ TCP mesajlaşma yönlendirme (router → server)
-- ✅ Session & connection pool yönetimi
-- ✅ Ölçeklenebilir ve gömülü sistemlere uygun yapı
+- ✅ Router kaldırılarak tekil hata noktası ortadan kaldırıldı
+- ✅ Tüm iletişim Docker internal ağı üzerinden, tek port (6003) ile yönetilir
+- ✅ Server ID’si ile eşleşme sayesinde yönlendirme basitleştirildi
+- ✅ Gerçek zamanlı log görüntüleme
+- ✅ Aynı anda birden fazla peer aktif şekilde yönetilebilir
+- ✅ İzole ortam sayesinde çakışma yaşanmadan genişletilebilir yapı
 
 ---
 
@@ -123,9 +109,34 @@ Projeye ait 3 kapsamlı döküman repoda yer almaktadır:
 |--------------------|----------|
 | `TUBITAK-UZAY-MultiCommSim – Requirements Document.pdf` | Tüm sistem gereksinimleri detaylı listelenmiştir. |
 | `TUBITAK-UZAY-MultiCommSim – Design Document.pdf`       | Yapısal tasarım, mimari bileşenler ve diagramlar yer alır. |
-| `TUBITAK-UZAY-MultiCommSim – Final Delivery Report.pdf` | Projenin detaylı final. |
+| `TUBITAK-UZAY-MultiCommSim – Final Delivery Report.pdf` | Projenin detaylı finali sunulmuştur. |
+| `TUBITAK-UZAY-MultiCommSim – Optimization Additional Report.pdf` | Optimize versiyonunun detayları sunulmuştur. |
 
-> 🧠 Özellikle “Port Management” ve “Single Port Multiplexing” bölümleri teknik olarak önemlidir.
+> 🧠Final raporunda Özellikle “Port Management” ve “Single Port Multiplexing” bölümleri ve Optimizasyon raporunda "Port Management and TCP Multiplexing " teknik olarak önemlidir.
+
+---
+
+## 📸 Arayüz Görselleri
+
+<p align="center">
+  <img src="images/OptimizedUI1.png" alt="Dashboard" width="700"/>
+  <img src="images/OptimizedUI4.png" alt="Dashboard" width="700"/>
+  <img src="images/OptimizedUI5.png" alt="Dashboard" width="700"/>
+  <br/>
+  <em>Gelişmiş arayüz ile eş zamanlı peer takibi ve log görüntüleme</em>
+</p>
+
+<p align="center">
+  <img src="images/OptimizedUI2.png" alt="Peer Creation Modal" width="500"/>
+  <br/>
+  <em>Server oluşturma ekranı</em>
+</p>
+
+<p align="center">
+  <img src="images/OptimizedUI3.png" alt="Peer Creation Modal" width="500"/>
+  <br/>
+  <em>Client oluşturma ve Server'a bağlama ekranı</em>
+</p>
 
 ---
 
