@@ -1,4 +1,4 @@
-# 🚀 MultiCommSim – Distributed Multi-Protocol Communication Simulator
+# 🚀 MultiCommSim – Multi Communication Simulator
 
 > TÜBİTAK UZAY destekli bir proje olarak geliştirilen **MultiCommSim**, TCP/IP protokolü üzerinden birçok bağımsız peer (client-server çifti) arasında haberleşmeyi aynı IP ve port üzerinden yöneten **modüler ve ölçeklenebilir** bir simülasyon ortamı sağlar.
 
