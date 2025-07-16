@@ -8,14 +8,15 @@
 
 ```
 MultiCommSim/
+├── api/                   → Python Flask backend (Docker kontrolü)
 ├── backend/               
 │   └── client/            → Java client uygulaması
 │   └── server/            → Java server uygulaması
 │   └── common/            → Ortak mesaj ve log modülleri
-├── frontend/              → React UI (MultiCommSim Visualizer)
-│   └── public/, src/
-├── api/                   → Python Flask backend (Docker kontrolü)
 ├── docker/                → Dockerfile’lar & compose dosyaları
+├── frontend/              → React UI (MultiCommSim Visualizer)
+│   └── public/
+│   └── src/
 ├── images/                → UI görselleri
 ├── documentation/         → Requirements, Design, Final Report
 ├── requirements.txt       → Flask için bağımlılıklar
@@ -35,7 +36,7 @@ MultiCommSim/
 ### 2️⃣ Kurulum
 
 ```bash
-git clone https://github.com/kullanici/MultiCommSim.git
+git clone https://github.com/EdizArkin/TUBITAK-UZAY-MultiCommSim
 cd MultiCommSim
 ```
 
@@ -45,6 +46,26 @@ cd MultiCommSim
 cd api/
 pip install -r requirements.txt
 ```
+
+#### Backend (Java)
+
+Her iki Java modülü (`client/` ve `server/`), çalıştırılabilir `.jar` dosyaları olarak paketlenmelidir. Aşağıdaki komutlar, her modül için Shadow JAR dosyasını üretir:
+
+```bash
+cd backend/client
+./gradlew shadowJar
+
+cd ../server
+./gradlew shadowJar
+```
+
+> 🔧 Not: Eğer `./gradlew` çalışmıyorsa, önce Gradle Wrapper dosyalarının (`gradlew`, `gradlew.bat`, `gradle/wrapper/`) projenizde bulunduğundan emin olun. Yoksa global Gradle ile şu komutu da kullanabilirsiniz:
+>
+> ```bash
+> gradle shadowJar
+> ```
+
+Üretilen `.jar` dosyaları `build/libs/` dizini altında bulunur. Dockerfile’lar bu `.jar` dosyalarını kullanarak container imajlarını oluşturur.
 
 #### Frontend
 
@@ -57,6 +78,7 @@ npm run build
 ### 3️⃣ Sistemi Başlat
 
 ```bash
+cd docker/
 docker compose up --build
 ```
 
