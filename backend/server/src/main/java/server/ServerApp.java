@@ -35,10 +35,10 @@ public class ServerApp {
                     Message msg = gson.fromJson(line, Message.class);
                     System.out.println("Received from router: " + msg.getMessage());
 
-                    // Cevap olarak server mesajını döndür
+                    // Return server message as response
                     msg.setMessage(serverMsg + " | Echo: " + msg.getMessage());
                     out.println(gson.toJson(msg));
-                    // break; // İstersen bir mesajdan sonra kapatma, yoksa kalıcı açık kalabilir.
+                    // break; // If desired, close after a message, otherwise it can remain open permanently.
                 }
                 clientSocket.close();
                 System.out.println("Client disconnected");
